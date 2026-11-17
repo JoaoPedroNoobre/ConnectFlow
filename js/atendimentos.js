@@ -25,3 +25,19 @@ export function criarAtendimento(id, nomeCliente) {
     status: STATUS.EM_ATENDIMENTO
   };
 }
+
+/* Filtra atendimentos pelo status informado */
+
+export function filtrarAtendimentos(atendimentos, status) {
+  if (!Array.isArray(atendimentos)) {
+    throw new Error("Informe uma lista de atendimentos.");
+  }
+
+  if (!Object.values(STATUS).includes(status)) {
+    throw new Error("Status de atendimento inválido.");
+  }
+
+  return atendimentos.filter((atendimento) => {
+    return atendimento.status === status;
+  });
+}
