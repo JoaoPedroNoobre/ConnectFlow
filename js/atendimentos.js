@@ -41,3 +41,26 @@ export function filtrarAtendimentos(atendimentos, status) {
     return atendimento.status === status;
   });
 }
+
+
+/* Altera o status de um atendimento */
+export function alterarStatusAtendimento(atendimento, novoStatus) {
+
+  // Verifica se o atendimento é um objeto válido
+  if (!atendimento || typeof atendimento !== "object" ||
+      Array.isArray(atendimento)) {
+    throw new Error("Atendimento inválido.");
+  }
+
+  // Verifica se o novo status existe no sistema
+  if (!Object.values(STATUS).includes(novoStatus)) {
+    throw new Error("Status de atendimento inválido.");
+  }
+
+  // Retorna uma cópia do atendimento com o novo status
+  return {
+    ...atendimento,
+    status: novoStatus
+  };
+}
+
