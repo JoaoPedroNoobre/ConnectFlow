@@ -64,3 +64,31 @@ export function alterarStatusAtendimento(atendimento, novoStatus) {
   };
 }
 
+
+/* Responsáveis pela resolução do atendimento */
+export const RESPONSAVEIS = Object.freeze({
+  IA: "ia",
+  HUMANO: "humano"
+});
+
+/* Finaliza um atendimento e registra quem resolveu */
+export function finalizarAtendimento(atendimento, responsavel) {
+
+  // Verifica se o responsável informado é válido
+  if (!Object.values(RESPONSAVEIS).includes(responsavel)) {
+    throw new Error("Responsável pelo atendimento inválido.");
+  }
+
+  // Reutiliza a função que altera o status
+  const atualizado = alterarStatusAtendimento(
+    atendimento,
+    STATUS.RESOLVIDO
+  );
+
+  // Retorna o atendimento finalizado
+  return {
+    ...atualizado,
+    resolvidoPor: responsavel
+  };
+}
+
