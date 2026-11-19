@@ -22,6 +22,12 @@ export function calcularMetricas(atendimentos) {
 
     resolvidos: atendimentos.filter(
       (a) => a.status === STATUS.RESOLVIDO
+    ).length,
+
+// Conta quantos atendimentos estão assumidos por humanos
+
+    assumidos: atendimentos.filter(
+      (a) => a.status === STATUS.ASSUMIDO
     ).length
   };
 }
