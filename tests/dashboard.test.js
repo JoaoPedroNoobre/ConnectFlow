@@ -3,15 +3,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { calcularMetricas } from "../js/dashboard.js";
-import { STATUS } from "../js/atendimentos.js";
+import { STATUS, RESPONSAVEIS } from "../js/atendimentos.js";
+import { ORIGENS } from "../js/origem.js";
 
-// Teste 1: verifica os cálculos do Dashboard
-test("calcula as metricas corretamente", () => {
+// Teste 1: verifica todas as métricas
+test("calcula todas as métricas corretamente", () => {
   const atendimentos = [
     { status: STATUS.EM_ATENDIMENTO },
-    { status: STATUS.EM_ATENDIMENTO },
     { status: STATUS.AGUARDANDO_HUMANO },
-    { status: STATUS.RESOLVIDO },
+    {
+      status: STATUS.RESOLVIDO,
+      resolvidoPor: RESPONSAVEIS.IA,
+      origem: ORIGENS.INSTAGRAM
+    },
+    {
+      status: STATUS.RESOLVIDO,
+      resolvidoPor: RESPONSAVEIS.HUMANO
+    },
     { status: STATUS.ASSUMIDO }
   ];
 
@@ -19,29 +27,51 @@ test("calcula as metricas corretamente", () => {
 
   assert.deepEqual(resultado, {
     total: 5,
-    emAtendimento: 2,
+    emAtendimento: 1,
     aguardandoHumano: 1,
-    resolvidos: 1,
-    assumidos: 1
+    resolvidos: 2,
+    assumidos: 1,
+    resolvidosIA: 1,
+    resolvidosHumanos: 1,
+    origemInstagram: 1,
+    taxaResolucaoIA: 50
   });
 });
 
-// Teste 2: verifica o Dashboard sem atendimentos
-test("retorna zero quando nao existem atendimentos", () => {
-  const resultado = calcularMetricas([]);
-
-  assert.deepEqual(resultado, {
+// Teste 2: verifica lista vazia
+test("retorna zero sem atendimentos", () => {
+  assert.deepEqual(calcularMetricas([]), {
     total: 0,
     emAtendimento: 0,
     aguardandoHumano: 0,
     resolvidos: 0,
-    assumidos: 0
+    assumidos: 0,
+    resolvidosIA: 0,
+    resolvidosHumanos: 0,
+    origemInstagram: 0,
+    taxaResolucaoIA: 0
   });
 });
 
-// Teste 3: verifica se dados inválidos são rejeitados
-test("rejeita dados que nao sao uma lista", () => {
+// Teste 3: impede dados inválidos
+test("rejeita dados inválidos", () => {
   assert.throws(() => {
-    calcularMetricas("texto invalido");
+    calcularMetricas("texto");
   }, /Informe uma lista de atendimentos/);
+});
+
+// Teste 4: verifica resoluções sem responsável
+test("não conta responsável desconhecido na taxa", () => {
+  const atendimentos = [
+    { status: STATUS.RESOLVIDO },
+    {
+      status: STATUS.RESOLVIDO,
+      resolvidoPor: RESPONSAVEIS.IA
+    }
+  ];
+
+  const resultado = calcularMetricas(atendimentos);
+
+  assert.equal(resultado.resolvidos, 2);
+  assert.equal(resultado.taxaResolucaoIA, 100);
 });
