@@ -19,11 +19,14 @@ export function criarAtendimento(id, nomeCliente) {
     throw new Error("ID e nome do cliente são obrigatórios.");
   }
 
-  return {
-    id: id.trim(),
-    cliente: nomeCliente.trim(),
-    status: STATUS.EM_ATENDIMENTO
-  };
+  
+return {
+  id: id.trim(),
+  cliente: nomeCliente.trim(),
+  status: STATUS.EM_ATENDIMENTO,
+  iaAtiva: true
+};
+
 }
 
 /* Filtra atendimentos pelo status informado */
@@ -58,10 +61,15 @@ export function alterarStatusAtendimento(atendimento, novoStatus) {
   }
 
   // Retorna uma cópia do atendimento com o novo status
-  return {
-    ...atendimento,
-    status: novoStatus
-  };
+ 
+return {
+  ...atendimento,
+  status: novoStatus,
+  iaAtiva: novoStatus === STATUS.EM_ATENDIMENTO
+    ? atendimento.iaAtiva !== false
+    : false
+};
+
 }
 
 
