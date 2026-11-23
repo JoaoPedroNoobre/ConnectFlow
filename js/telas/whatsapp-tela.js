@@ -12,7 +12,7 @@ import {
 } from "../estado.js";
 import {
   $, icone, escapar, iniciais, badgeStatus, horaAtual, formatarTelefone,
-  toast, lerArmazenado, ROTULO_STATUS
+  toast, lerArmazenado, corAvatar, ROTULO_STATUS, ROTULO_FILTRO
 } from "../ui.js";
 
 const estado = { filtro: "todos", busca: "", selecionadoId: null };
@@ -84,14 +84,14 @@ function renderizarTudo() {
 function renderizarFiltros() {
   const todos = listarAtendimentos();
   const opcoes = [["todos", "Todos", todos.length]].concat(
-    Object.values(STATUS).map((s) => [s, ROTULO_STATUS[s], filtrarAtendimentos(todos, s).length])
+    Object.values(STATUS).map((s) => [s, ROTULO_FILTRO[s], filtrarAtendimentos(todos, s).length])
   );
 
   els.filtros.innerHTML = opcoes
     .map(([valor, rotulo, qtd]) => {
       const ativo = estado.filtro === valor;
-      return `<button type="button" class="chip ${ativo ? "is-active" : ""}" data-filtro="${valor}"
-                role="tab" aria-selected="${ativo}">${rotulo} <span class="chip__count">${qtd}</span></button>`;
+      return `<button type="button" class="pill ${ativo ? "is-active" : ""}" data-filtro="${valor}"
+                role="tab" aria-selected="${ativo}">${rotulo} (${qtd})</button>`;
     })
     .join("");
 }
@@ -116,7 +116,7 @@ function renderizarLista() {
         <li>
           <button type="button" class="conversation ${ativo ? "is-active" : ""}" data-id="${a.id}"
                   ${ativo ? 'aria-current="true"' : ""}>
-            <span class="avatar">${iniciais(a.cliente)}</span>
+            <span class="avatar" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
             <span class="conversation__body">
               <span class="conversation__row">
                 <strong>${escapar(a.cliente)}</strong>
@@ -134,7 +134,7 @@ function renderizarLista() {
 /* ---------- Conversa ---------- */
 
 function nomeAgente() {
-  return lerArmazenado("cf-agente")?.nome || "Flora";
+  return $("#agNome").value || "Assistente";
 }
 
 function renderizarMensagem(m) {
@@ -178,7 +178,7 @@ function rodape(status) {
   }
   const textos = {
     [STATUS.EM_ATENDIMENTO]: [icone("i-sparkles"), "A IA está conduzindo este atendimento.", ""],
-    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", ""],
+    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", "composer-lock--wait"],
     [STATUS.RESOLVIDO]: [icone("i-check-circle"), "Este atendimento foi resolvido.", "composer-lock--done"]
   };
   const [ic, texto, extra] = textos[status];
@@ -201,14 +201,15 @@ function renderizarJanela() {
   els.janela.innerHTML = `
     <header class="chat-window__header">
       <button class="icon-btn chat-window__back" type="button" data-action="voltar-lista" aria-label="Voltar para a lista">${icone("i-arrow-left")}</button>
-      <span class="avatar">${iniciais(a.cliente)}</span>
+      <span class="avatar" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
       <div class="chat-window__who">
         <strong>${escapar(a.cliente)}</strong>
         ${badgeStatus(a.status)}
       </div>
       <div class="chat-window__actions">
         ${botoesAcao(a.status)}
-        <button class="icon-btn chat-window__info-btn" type="button" data-action="abrir-info" aria-label="Informações do cliente">${icone("i-info")}</button>
+        ${linkWhatsApp(a.telefone) ? `<a class="icon-btn" href="${linkWhatsApp(a.telefone)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp" title="Abrir no WhatsApp">${icone("i-phone")}</a>` : ""}
+        <button class="icon-btn" type="button" data-action="abrir-info" aria-label="Informações do cliente" title="Informações do cliente">${icone("i-more")}</button>
       </div>
     </header>
     <div class="messages" id="listaMensagens">
@@ -220,6 +221,15 @@ function renderizarJanela() {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
+/* Link wa.me gerado com js/whatsapp.js ("" se o telefone for inválido) */
+function linkWhatsApp(telefone) {
+  try {
+    return gerarLinkWhatsApp(telefone);
+  } catch {
+    return "";
+  }
+}
+
 function renderizarInfo() {
   const a = buscarAtendimento(estado.selecionadoId);
   if (!a) {
@@ -227,17 +237,12 @@ function renderizarInfo() {
     return;
   }
 
-  let link = "";
-  try {
-    link = gerarLinkWhatsApp(a.telefone);
-  } catch {
-    link = "";
-  }
+  const link = linkWhatsApp(a.telefone);
 
   els.info.innerHTML = `
     <div class="chat-info__head">
       <button class="icon-btn chat-info__close" type="button" data-action="fechar-info" aria-label="Fechar">${icone("i-x")}</button>
-      <span class="avatar avatar--lg">${iniciais(a.cliente)}</span>
+      <span class="avatar avatar--lg" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
       <strong>${escapar(a.cliente)}</strong>
       ${badgeStatus(a.status)}
     </div>
