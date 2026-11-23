@@ -26,6 +26,13 @@ const TIPOS = {
 
 createServer(async (req, res) => {
   const caminho = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+
+  // Bloqueia o acesso a arquivos e pastas privados
+  if (caminho.split(/[\\/]/).some(parte => parte.startsWith("."))) {
+    res.writeHead(403).end("Acesso negado");
+    return;
+  }
+
   const arquivo = normalize(join(RAIZ, caminho === "/" ? "index.html" : caminho));
 
   // Impede acesso a arquivos fora da pasta do projeto

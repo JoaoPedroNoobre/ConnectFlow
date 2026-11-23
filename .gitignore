@@ -1,0 +1,7 @@
+# Credenciais e configuracoes privadas
+.env
+.env.*
+!.env.example
+
+# Dependencias
+node_modules/
