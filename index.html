@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ConnectFlow — automação, atendimento e marketing com Inteligência Artificial para pequenos e médios negócios.">
+  <meta name="theme-color" content="#0b0b18">
+  <title>ConnectFlow — Automação, atendimento e marketing</title>
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+
+  <div class="app">
+    <!-- ============ MENU LATERAL ============ -->
+    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+      <div class="sidebar__brand">
+        <img src="assets/logo.svg" alt="" width="34" height="34">
+        <span>Connect<strong>Flow</strong></span>
+        <button class="icon-btn sidebar__close" type="button" data-action="fechar-menu" aria-label="Fechar menu">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <ul>
+          <li><a href="#dashboard" class="nav-link" data-view="dashboard">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-dashboard"/></svg>Dashboard</a></li>
+          <li><a href="#whatsapp" class="nav-link" data-view="whatsapp">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>WhatsApp
+            <span class="nav-link__badge" id="badgeAguardando" hidden></span></a></li>
+          <li><a href="#agente" class="nav-link" data-view="agente">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-bot"/></svg>Agente de IA</a></li>
+          <li><a href="#instagram" class="nav-link" data-view="instagram">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-instagram"/></svg>Instagram Studio</a></li>
+          <li><a href="#configuracoes" class="nav-link" data-view="configuracoes">
+            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-settings"/></svg>Configurações</a></li>
+        </ul>
+      </nav>
+
+      <a class="company-card" href="#configuracoes" title="Dados da empresa">
+        <span class="company-card__logo" id="empresaAvatar" aria-hidden="true">E</span>
+        <span class="company-card__info">
+          <strong id="empresaNomeMenu">Empresa Exemplo</strong>
+          <small>Dados demonstrativos</small>
+        </span>
+        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chevron-right"/></svg>
+      </a>
+    </aside>
+    <div class="backdrop" data-action="fechar-menu" hidden></div>
+
+    <!-- ============ ÁREA PRINCIPAL ============ -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn topbar__menu" type="button" data-action="abrir-menu" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-menu"/></svg>
+        </button>
+        <div class="topbar__title">
+          <h1 id="tituloPagina">Dashboard</h1>
+          <p id="subtituloPagina">Visão geral do seu atendimento e marketing</p>
+        </div>
+
+        <!-- Ações do topo: cada grupo aparece apenas na sua tela -->
+        <div class="topbar__actions">
+          <div class="action-group" data-acoes="dashboard">
+            <label class="select-pill">
+              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-calendar"/></svg>
+              <span class="sr-only">Período</span>
+              <select id="filtroPeriodo">
+                <option value="hoje">Hoje</option>
+                <option value="semana" selected>Últimos 7 dias</option>
+                <option value="mes">Últimos 30 dias</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="action-group" data-acoes="whatsapp" hidden>
+            <label class="ai-pill">
+              <span class="switch switch--sm"><input type="checkbox" data-ia-ativa checked><span class="sr-only">IA ativa</span></span>
+              <span data-ia-rotulo>IA Ativa</span>
+            </label>
+            <button class="btn btn--outline btn--sm" type="button" data-action="alternar-ia">
+              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-pause"/></svg><span data-ia-botao>Pausar IA</span>
+            </button>
+          </div>
+
+          <div class="action-group" data-acoes="agente" hidden>
+            <label class="ai-pill">
+              <span class="switch switch--sm"><input type="checkbox" name="ativo" form="formAgente" data-ia-ativa checked><span class="sr-only">IA ativa</span></span>
+              <span data-ia-rotulo>IA Ativa</span>
+            </label>
+          </div>
+
+          <div class="action-group" data-acoes="instagram" hidden>
+            <button class="btn btn--primary btn--sm" type="button" data-action="novo-post">
+              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg><span>Novo Post</span>
+            </button>
+          </div>
+
+          <div class="action-group" data-acoes="configuracoes" hidden>
+            <button class="btn btn--success btn--sm" type="button" data-action="salvar-configuracoes">
+              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-save"/></svg><span>Salvar alterações</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main id="conteudo" class="content" tabindex="-1">
+
+        <!-- ================= 1. DASHBOARD ================= -->
+        <section class="view" id="view-dashboard" data-view="dashboard">
+          <div class="kpi-grid">
+            <article class="kpi">
+              <p class="kpi__label">Clientes (total)</p>
+              <div class="kpi__row"><p class="kpi__value" id="kpiClientes">—</p><span class="trend trend--up" id="kpiClientesTend"></span></div>
+            </article>
+            <article class="kpi">
+              <p class="kpi__label">Finalizados pela IA</p>
+              <div class="kpi__row"><p class="kpi__value" id="kpiFinalizados">—</p><span class="trend trend--up" id="kpiFinalizadosPct"></span></div>
+            </article>
+            <article class="kpi">
+              <p class="kpi__label">Em tratamento</p>
+              <div class="kpi__row"><p class="kpi__value" id="kpiTratamento">—</p><span class="trend trend--neutral" id="kpiTratamentoPct"></span></div>
+            </article>
+            <article class="kpi">
+              <p class="kpi__label">Não concluídos</p>
+              <div class="kpi__row"><p class="kpi__value" id="kpiNaoConcluidos">—</p><span class="trend trend--down" id="kpiNaoConcluidosPct"></span></div>
+            </article>
+            <article class="kpi">
+              <p class="kpi__label">Intervenção humana</p>
+              <div class="kpi__row"><p class="kpi__value" id="kpiIntervencao">—</p><span class="trend trend--warn" id="kpiIntervencaoPct"></span></div>
+            </article>
+          </div>
+
+          <div class="dash-grid">
+            <article class="card">
+              <h2 class="card__title">Clientes por origem</h2>
+              <div class="donut-wrap">
+                <div class="donut" id="graficoOrigem" role="img" aria-label="Distribuição de clientes por origem">
+                  <div class="donut__center"><strong id="donutTotal">—</strong><small>Clientes</small></div>
+                </div>
+                <ul class="donut-legend" id="legendaOrigem"></ul>
+              </div>
+            </article>
+
+            <article class="card">
+              <h2 class="card__title">Conversões (vendas)</h2>
+              <div class="sales-head">
+                <strong class="sales-head__value" id="valorVendas">—</strong>
+                <span class="trend trend--up" id="tendenciaVendas"></span>
+              </div>
+              <svg class="line-chart" id="graficoVendas" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="Evolução das vendas no período"></svg>
+            </article>
+          </div>
+
+          <div class="dash-grid dash-grid--3">
+            <article class="card">
+              <h2 class="card__title">Desempenho da IA</h2>
+              <ul class="metric-list">
+                <li>
+                  <div class="metric-list__row"><span>Taxa de resolução</span><strong id="metricaResolucao">—</strong></div>
+                  <div class="progress"><span id="barraResolucao"></span></div>
+                </li>
+                <li>
+                  <div class="metric-list__row"><span>Satisfação dos clientes</span><strong>4,6 / 5</strong></div>
+                  <div class="progress progress--green"><span style="--valor: 92%"></span></div>
+                </li>
+                <li>
+                  <div class="metric-list__row"><span>Tempo médio de resposta</span><strong>8 s</strong></div>
+                  <div class="progress progress--cyan"><span style="--valor: 85%"></span></div>
+                </li>
+              </ul>
+            </article>
+
+            <article class="card">
+              <h2 class="card__title">Status dos atendimentos</h2>
+              <ul class="status-summary" id="resumoStatus"></ul>
+            </article>
+
+            <article class="card">
+              <header class="card__header">
+                <h2 class="card__title">Atendimentos recentes</h2>
+                <a href="#whatsapp" class="link-more">Ver todos</a>
+              </header>
+              <ul class="recent-list" id="listaRecentes"></ul>
+            </article>
+          </div>
+        </section>
+
+        <!-- ================= 2. WHATSAPP INTEGRADO ================= -->
+        <section class="view" id="view-whatsapp" data-view="whatsapp" hidden>
+          <div class="chat-layout" id="chatLayout" data-painel="lista">
+            <div class="card chat-list">
+              <div class="chat-list__top">
+                <div class="chat-list__search">
+                  <label class="search">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>
+                    <span class="sr-only">Buscar conversas</span>
+                    <input type="search" id="buscaCliente" placeholder="Buscar conversas..." autocomplete="off">
+                  </label>
+                  <button class="icon-btn icon-btn--primary" type="button" data-action="novo-atendimento" aria-label="Novo atendimento" title="Novo atendimento">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>
+                  </button>
+                </div>
+                <div class="pills" id="filtrosStatus" role="tablist" aria-label="Filtrar por status"></div>
+              </div>
+              <ul class="conversation-list" id="listaConversas" aria-label="Lista de conversas"></ul>
+            </div>
+
+            <div class="card chat-window" id="janelaChat" aria-live="polite"></div>
+
+            <aside class="card chat-info" id="infoCliente" aria-label="Informações do cliente"></aside>
+          </div>
+        </section>
+
+        <!-- ================= 3. AGENTE DE IA ================= -->
+        <section class="view" id="view-agente" data-view="agente" hidden>
+          <div class="agent-grid">
+            <form class="card agent-config" id="formAgente" data-persistir="cf-agente" novalidate>
+              <div class="tabs" role="tablist" aria-label="Configuração do agente">
+                <button type="button" class="tabs__tab is-active" role="tab" id="tab-ag-geral" aria-controls="painel-ag-geral" aria-selected="true">Geral</button>
+                <button type="button" class="tabs__tab" role="tab" id="tab-ag-catalogo" aria-controls="painel-ag-catalogo" aria-selected="false" tabindex="-1">Catálogo</button>
+                <button type="button" class="tabs__tab" role="tab" id="tab-ag-respostas" aria-controls="painel-ag-respostas" aria-selected="false" tabindex="-1">Respostas</button>
+                <button type="button" class="tabs__tab" role="tab" id="tab-ag-comportamento" aria-controls="painel-ag-comportamento" aria-selected="false" tabindex="-1">Comportamento</button>
+              </div>
+
+              <!-- Geral -->
+              <div class="tab-panel" id="painel-ag-geral" role="tabpanel" aria-labelledby="tab-ag-geral">
+                <div class="field">
+                  <label for="agNome">Nome do agente</label>
+                  <input id="agNome" name="nome" type="text" value="Assistente ConnectFlow" required maxlength="40">
+                </div>
+                <div class="field">
+                  <label for="agTom">Personalidade</label>
+                  <select id="agTom" name="tom">
+                    <option value="consultivo" selected>Consultivo e amigável</option>
+                    <option value="profissional">Profissional e cordial</option>
+                    <option value="objetivo">Direto e objetivo</option>
+                    <option value="descontraido">Descontraído</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <div class="field__label-row">
+                    <label for="agInstrucoes">Instruções principais</label>
+                  </div>
+                  <textarea id="agInstrucoes" name="instrucoes" rows="5" maxlength="500">Você é o assistente virtual da empresa. Responda dúvidas sobre produtos, serviços, preços e prazos, ajude o cliente a escolher e encaminhe para um atendente quando necessário.</textarea>
+                  <small class="counter" id="contadorInstrucoes" aria-live="polite">0/500</small>
+                </div>
+              </div>
+
+              <!-- Catálogo -->
+              <div class="tab-panel" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
+                <p class="panel-hint">Base usada pela IA para consultar itens e informar preços.</p>
+                <div class="catalog-form" id="catalogoNovo">
+                  <div class="field">
+                    <label for="catNome">Produto ou serviço</label>
+                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura">
+                  </div>
+                  <div class="field">
+                    <label for="catCategoria">Categoria</label>
+                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos">
+                  </div>
+                  <div class="field">
+                    <label for="catPreco">Preço (R$)</label>
+                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00">
+                  </div>
+                  <button class="btn btn--outline" type="button" data-action="adicionar-item">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
+                  </button>
+                </div>
+                <div class="table-wrap">
+                  <table class="table">
+                    <thead>
+                      <tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col" class="num">Preço</th><th scope="col"><span class="sr-only">Ações</span></th></tr>
+                    </thead>
+                    <tbody id="tabelaCatalogo"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Respostas -->
+              <div class="tab-panel" id="painel-ag-respostas" role="tabpanel" aria-labelledby="tab-ag-respostas" hidden>
+                <div class="field">
+                  <label for="agBoasVindas">Mensagem de boas-vindas</label>
+                  <textarea id="agBoasVindas" name="boasVindas" rows="3" maxlength="300">Olá! 👋 Sou o assistente da sua empresa. Como posso te ajudar hoje?</textarea>
+                </div>
+                <div class="field">
+                  <label for="agTransferencia">Mensagem ao transferir para um atendente</label>
+                  <textarea id="agTransferencia" name="msgTransferencia" rows="2" maxlength="300">Vou chamar um atendente para continuar o seu atendimento. Só um instante!</textarea>
+                </div>
+              </div>
+
+              <!-- Comportamento -->
+              <div class="tab-panel" id="painel-ag-comportamento" role="tabpanel" aria-labelledby="tab-ag-comportamento" hidden>
+                <h3 class="section-title">Habilidades</h3>
+                <div class="skill-grid">
+                  <label class="skill">
+                    <input type="checkbox" name="habDuvidas" checked>
+                    <span class="skill__box">
+                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-message"/></svg>
+                      <strong>Responder dúvidas</strong>
+                      <small>Horários, endereço e perguntas frequentes.</small>
+                    </span>
+                  </label>
+                  <label class="skill">
+                    <input type="checkbox" name="habCatalogo" checked>
+                    <span class="skill__box">
+                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-package"/></svg>
+                      <strong>Consultar catálogo</strong>
+                      <small>Busca itens do catálogo cadastrado.</small>
+                    </span>
+                  </label>
+                  <label class="skill">
+                    <input type="checkbox" name="habPrecos" checked>
+                    <span class="skill__box">
+                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-trending"/></svg>
+                      <strong>Informar preços</strong>
+                      <small>Responde valores de produtos e serviços.</small>
+                    </span>
+                  </label>
+                  <label class="skill">
+                    <input type="checkbox" name="habApresentar" checked>
+                    <span class="skill__box">
+                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-image"/></svg>
+                      <strong>Apresentar produtos</strong>
+                      <small>Sugere itens relacionados ao interesse.</small>
+                    </span>
+                  </label>
+                </div>
+
+                <h3 class="section-title">Intervenção humana</h3>
+                <p class="panel-hint">A conversa muda para <em>Aguardando humano</em> quando:</p>
+                <div class="check-list">
+                  <label class="check"><input type="checkbox" name="transfPedido" checked><span>O cliente pedir para falar com um atendente</span></label>
+                  <label class="check"><input type="checkbox" name="transfSemResposta" checked><span>A IA não encontrar uma resposta adequada</span></label>
+                  <label class="check"><input type="checkbox" name="transfReclamacao" checked><span>For identificada uma reclamação</span></label>
+                  <label class="check"><input type="checkbox" name="transfNegociacao"><span>O cliente pedir desconto, negociação ou agendamento</span></label>
+                </div>
+              </div>
+
+              <button class="btn btn--primary btn--block agent-config__save" type="submit">Salvar alterações</button>
+            </form>
+
+            <!-- Prévia do agente (simulação local) -->
+            <aside class="card agent-preview" aria-labelledby="tituloPrevia">
+              <header class="agent-preview__header">
+                <h2 class="card__title" id="tituloPrevia">Prévia do agente</h2>
+                <button class="icon-btn" type="button" data-action="reiniciar-teste" aria-label="Reiniciar conversa de teste" title="Reiniciar conversa">
+                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-trash"/></svg>
+                </button>
+              </header>
+              <div class="messages messages--preview" id="mensagensTeste"></div>
+              <div class="quick-actions" id="sugestoesTeste">
+                <button type="button" class="quick-btn">Ver catálogo</button>
+                <button type="button" class="quick-btn">Consultar preços</button>
+                <button type="button" class="quick-btn">Agendar atendimento</button>
+              </div>
+              <form class="composer" id="formTeste">
+                <label class="sr-only" for="entradaTeste">Mensagem de teste</label>
+                <input id="entradaTeste" type="text" placeholder="Pergunte algo como um cliente..." autocomplete="off">
+                <button class="btn btn--primary btn--icon" type="submit" aria-label="Enviar">
+                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-send"/></svg>
+                </button>
+              </form>
+              <p class="agent-preview__note">Simulação local com o catálogo atual — a IA real será conectada pelas APIs.</p>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ================= 4. INSTAGRAM STUDIO ================= -->
+        <section class="view" id="view-instagram" data-view="instagram" hidden>
+          <div class="studio-grid">
+            <div class="studio-main">
+              <!-- Editor (aparece em "Novo Post" ou ao editar) -->
+              <form class="card studio-editor" id="formPost" novalidate hidden>
+                <header class="card__header">
+                  <h2 class="card__title" id="tituloEditor">Novo post</h2>
+                  <button class="icon-btn" type="button" data-action="fechar-editor" aria-label="Fechar editor">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+                  </button>
+                </header>
+
+                <div class="segmented" role="radiogroup" aria-label="Formato">
+                  <label><input type="radio" name="formato" value="feed" checked><span>Feed</span></label>
+                  <label><input type="radio" name="formato" value="story"><span>Story</span></label>
+                </div>
+
+                <label class="dropzone" id="dropzone">
+                  <input type="file" id="postImagem" accept="image/*" class="sr-only">
+                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-upload"/></svg>
+                  <strong>Clique ou arraste uma imagem</strong>
+                  <small>PNG ou JPG — a imagem fica apenas no seu navegador</small>
+                </label>
+
+                <div class="field">
+                  <div class="field__label-row">
+                    <label for="postLegenda">Legenda</label>
+                    <small class="counter" id="contadorLegenda">0 / 2200</small>
+                  </div>
+                  <textarea id="postLegenda" name="legenda" rows="4" maxlength="2200" placeholder="Escreva a legenda da publicação..."></textarea>
+                </div>
+
+                <div class="field">
+                  <label for="postHashtags">Hashtags</label>
+                  <input id="postHashtags" name="hashtags" type="text" placeholder="#confeitaria #docesartesanais">
+                </div>
+
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="postData">Data</label>
+                    <input id="postData" name="data" type="date">
+                  </div>
+                  <div class="field">
+                    <label for="postHora">Horário</label>
+                    <input id="postHora" name="hora" type="time" value="18:00">
+                  </div>
+                </div>
+
+                <p class="form-error" id="erroPost" role="alert" hidden></p>
+
+                <div class="form-actions">
+                  <button class="btn btn--outline" type="button" data-action="salvar-rascunho">Salvar rascunho</button>
+                  <button class="btn btn--primary" type="submit">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-calendar"/></svg>Programar post
+                  </button>
+                </div>
+              </form>
+
+              <section class="card studio-list" aria-label="Publicações">
+                <div class="pills" id="filtrosPosts" role="tablist" aria-label="Filtrar publicações"></div>
+                <ul class="post-list" id="listaPosts"></ul>
+              </section>
+            </div>
+
+            <aside class="card studio-preview" aria-labelledby="tituloPreviaPost">
+              <h2 class="card__title" id="tituloPreviaPost">Prévia do Post</h2>
+              <article class="ig-post" id="previewPost" data-formato="feed">
+                <header class="ig-post__header">
+                  <span class="ig-post__avatar" id="previewAvatar">E</span>
+                  <strong id="previewUsuario">empresaexemplo</strong>
+                  <svg class="icon ig-post__more" aria-hidden="true"><use href="assets/icons.svg#i-more"/></svg>
+                </header>
+                <div class="ig-post__media" id="previewMidia" data-fundo="1">
+                  <p class="ig-post__headline" id="previewTitulo">Sua imagem aparecerá aqui</p>
+                </div>
+                <div class="ig-post__actions" aria-hidden="true">
+                  <svg class="icon"><use href="assets/icons.svg#i-heart"/></svg>
+                  <svg class="icon"><use href="assets/icons.svg#i-message"/></svg>
+                  <svg class="icon"><use href="assets/icons.svg#i-send"/></svg>
+                  <svg class="icon ig-post__save"><use href="assets/icons.svg#i-bookmark"/></svg>
+                </div>
+                <p class="ig-post__caption"><strong id="previewUsuario2">empresaexemplo</strong> <span id="previewLegenda">A legenda da publicação aparece aqui.</span> <span class="ig-post__tags" id="previewTags"></span></p>
+                <p class="ig-post__schedule" id="previewAgendamento"></p>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ================= 5. CONFIGURAÇÕES ================= -->
+        <section class="view" id="view-configuracoes" data-view="configuracoes" hidden>
+          <div class="card settings">
+            <div class="tabs" role="tablist" aria-label="Seções de configuração">
+              <button type="button" class="tabs__tab is-active" role="tab" id="tab-empresa" aria-controls="painel-empresa" aria-selected="true">Empresa</button>
+              <button type="button" class="tabs__tab" role="tab" id="tab-redes" aria-controls="painel-redes" aria-selected="false" tabindex="-1">Redes sociais</button>
+              <button type="button" class="tabs__tab" role="tab" id="tab-integracoes" aria-controls="painel-integracoes" aria-selected="false" tabindex="-1">Integrações</button>
+            </div>
+
+            <!-- Empresa -->
+            <form class="tab-panel settings__company" id="painel-empresa" role="tabpanel" aria-labelledby="tab-empresa" data-persistir="cf-empresa" novalidate>
+              <div class="form-grid">
+                <div class="field field--full">
+                  <label for="cfgNome">Nome da empresa</label>
+                  <input id="cfgNome" name="nome" type="text" value="Empresa Exemplo" required>
+                </div>
+                <div class="field field--full">
+                  <label for="cfgDescricao">Descrição</label>
+                  <textarea id="cfgDescricao" name="descricao" rows="3" maxlength="300">Especializada em confeitaria artesanal e atendimento personalizado.</textarea>
+                </div>
+                <div class="field">
+                  <label for="cfgSegmento">Segmento</label>
+                  <select id="cfgSegmento" name="segmento">
+                    <option>Alimentação</option>
+                    <option>Varejo</option>
+                    <option>Beleza e estética</option>
+                    <option>Serviços</option>
+                    <option>Saúde</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="cfgCnpj">CNPJ</label>
+                  <input id="cfgCnpj" name="cnpj" type="text" inputmode="numeric" placeholder="00.000.000/0000-00">
+                </div>
+                <div class="field">
+                  <label for="cfgEmail">E-mail de contato</label>
+                  <input id="cfgEmail" name="email" type="email" placeholder="contato@empresa.com.br">
+                </div>
+                <div class="field">
+                  <label for="cfgTelefone">Telefone</label>
+                  <input id="cfgTelefone" name="telefone" type="tel" placeholder="(83) 3333-0000">
+                </div>
+                <div class="field">
+                  <label for="cfgHorario">Horário de atendimento</label>
+                  <input id="cfgHorario" name="horario" type="text" value="Seg. a sáb., 8h às 18h">
+                </div>
+                <div class="field">
+                  <label for="cfgEndereco">Endereço</label>
+                  <input id="cfgEndereco" name="endereco" type="text" placeholder="Rua, número, bairro, cidade — UF">
+                </div>
+              </div>
+
+              <div class="logo-box">
+                <p class="logo-box__label">Logo da empresa</p>
+                <div class="logo-box__preview" id="logoPreview">
+                  <img src="assets/logo.svg" alt="" width="40" height="40">
+                  <strong id="logoNome">Empresa Exemplo</strong>
+                </div>
+                <div class="logo-box__actions">
+                  <label class="btn btn--outline btn--sm btn--block">
+                    <input type="file" id="cfgLogo" accept="image/*" class="sr-only">Alterar imagem
+                  </label>
+                  <button class="btn btn--danger-ghost btn--sm btn--block" type="button" data-action="remover-logo">Remover</button>
+                </div>
+              </div>
+            </form>
+
+            <!-- Redes sociais -->
+            <form class="tab-panel" id="painel-redes" role="tabpanel" aria-labelledby="tab-redes" data-persistir="cf-redes" hidden novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="cfgWhatsapp">WhatsApp comercial (com DDI)</label>
+                  <div class="input-icon">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>
+                    <input id="cfgWhatsapp" name="whatsapp" type="tel" placeholder="55 83 99999-9999">
+                  </div>
+                  <small class="field__hint" id="dicaWhatsapp">Usado para gerar o link de contato wa.me.</small>
+                </div>
+                <div class="field">
+                  <label for="cfgInstagram">Usuário do Instagram</label>
+                  <div class="input-icon">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-instagram"/></svg>
+                    <input id="cfgInstagram" name="instagram" type="text" placeholder="@empresaexemplo">
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="cfgMensagemLink">Mensagem inicial do link</label>
+                  <input id="cfgMensagemLink" name="mensagemLink" type="text" value="Olá, vim do Instagram!">
+                </div>
+                <div class="field">
+                  <label for="cfgSite">Site</label>
+                  <div class="input-icon">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-globe"/></svg>
+                    <input id="cfgSite" name="site" type="url" placeholder="https://">
+                  </div>
+                </div>
+              </div>
+              <div class="link-preview">
+                <div>
+                  <strong>Link de contato para a bio</strong>
+                  <code id="linkWhatsappGerado">Informe o WhatsApp para gerar o link</code>
+                </div>
+                <button class="btn btn--outline btn--sm" type="button" data-action="copiar-link" disabled>
+                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-link"/></svg>Copiar
+                </button>
+              </div>
+            </form>
+
+            <!-- Integrações -->
+            <div class="tab-panel" id="painel-integracoes" role="tabpanel" aria-labelledby="tab-integracoes" hidden>
+              <p class="panel-hint">As integrações são salvas automaticamente.</p>
+              <div class="integration-grid" id="listaIntegracoes"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: novo atendimento -->
+  <dialog class="modal" id="modalAtendimento" aria-labelledby="tituloModal">
+    <form class="modal__body" id="formAtendimento" novalidate>
+      <header class="modal__header">
+        <h2 id="tituloModal">Novo atendimento</h2>
+        <button class="icon-btn" type="button" data-action="fechar-modal" aria-label="Fechar">
+          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+        </button>
+      </header>
+      <div class="field">
+        <label for="novoNome">Nome do cliente</label>
+        <input id="novoNome" name="nome" type="text" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="novoTelefone">WhatsApp (com DDI)</label>
+        <input id="novoTelefone" name="telefone" type="tel" placeholder="55 83 99999-9999" required>
+      </div>
+      <p class="form-error" id="erroAtendimento" role="alert" hidden></p>
+      <div class="form-actions">
+        <button class="btn btn--ghost" type="button" data-action="fechar-modal">Cancelar</button>
+        <button class="btn btn--primary" type="submit">Criar atendimento</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast-region" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

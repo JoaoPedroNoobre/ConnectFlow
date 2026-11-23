@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <defs>
+    <linearGradient id="cf-g" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Balão de conversa com dois "olhos": atendimento + IA -->
+  <path d="M20 5C11.2 5 4 11 4 18.5c0 4 2 7.6 5.3 10.1L8 35l7.2-3.6c1.5.4 3.1.6 4.8.6 8.8 0 16-6 16-13.5S28.8 5 20 5z" fill="url(#cf-g)"/>
+  <rect x="13" y="15" width="4" height="7" rx="2" fill="#fff"/>
+  <rect x="23" y="15" width="4" height="7" rx="2" fill="#fff"/>
+</svg>
