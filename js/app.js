@@ -1,8 +1,8 @@
 /* ==========================================================================
    ConnectFlow — ponto de entrada da interface
    Responsável por: navegação entre as 5 telas (rotas por #hash), menu lateral
-   responsivo, persistência dos formulários de configuração e inicialização
-   de cada tela.
+   responsivo, ações do topo de cada tela, persistência dos formulários e
+   inicialização de cada tela.
    ========================================================================== */
 
 import { $, $$, toast, iniciais, lerArmazenado, gravarArmazenado, lerFormulario, preencherFormulario } from "./ui.js";
@@ -14,11 +14,11 @@ import { iniciarConfiguracoes } from "./telas/configuracoes.js";
 
 /* As 5 telas principais definidas no README do projeto */
 const TELAS = {
-  dashboard: { titulo: "Dashboard", subtitulo: "Métricas de atendimentos, clientes, conversões e desempenho da IA" },
-  whatsapp: { titulo: "WhatsApp Integrado", subtitulo: "Conversas atendidas pela IA, com intervenção humana quando necessário" },
-  agente: { titulo: "Agente de IA", subtitulo: "Configure o assistente virtual que atende seus clientes" },
-  instagram: { titulo: "Instagram Studio", subtitulo: "Crie, edite e agende publicações" },
-  configuracoes: { titulo: "Configurações", subtitulo: "Dados da empresa, redes sociais e integrações" }
+  dashboard: { titulo: "Dashboard", subtitulo: "Visão geral do seu atendimento e marketing" },
+  whatsapp: { titulo: "WhatsApp", subtitulo: "Atendimentos e conversas em tempo real" },
+  agente: { titulo: "Agente de IA", subtitulo: "Configure o comportamento do seu assistente virtual" },
+  instagram: { titulo: "Instagram Studio", subtitulo: "Crie, edite e programe suas publicações" },
+  configuracoes: { titulo: "Configurações", subtitulo: "Gerencie sua empresa, redes sociais e integrações" }
 };
 
 /* ---------- Menu lateral (gaveta em telas menores) ---------- */
@@ -58,6 +58,7 @@ function navegar() {
   const anterior = document.body.dataset.tela;
 
   $$(".view").forEach((v) => { v.hidden = v.dataset.view !== tela; });
+  $$("[data-acoes]").forEach((g) => { g.hidden = g.dataset.acoes !== tela; });
   $$(".nav-link").forEach((link) => {
     const ativo = link.dataset.view === tela;
     link.classList.toggle("is-active", ativo);
@@ -75,13 +76,25 @@ function navegar() {
   fecharMenu();
 }
 
-/* ---------- Formulários com persistência local (data-persistir) ---------- */
+/* ---------- Cartão da empresa no menu lateral ---------- */
 
-function atualizarCabecalhoEmpresa() {
-  const nome = lerArmazenado("cf-empresa")?.nome || "Minha Empresa";
-  $("#empresaNomeTopo").textContent = nome;
-  $("#empresaAvatar").textContent = iniciais(nome);
+function atualizarCartaoEmpresa() {
+  const nome = lerArmazenado("cf-empresa")?.nome || "Empresa Exemplo";
+  const logo = lerArmazenado("cf-logo");
+  $("#empresaNomeMenu").textContent = nome;
+  const avatar = $("#empresaAvatar");
+  if (logo) {
+    avatar.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = logo;
+    img.alt = "";
+    avatar.append(img);
+  } else {
+    avatar.textContent = iniciais(nome).slice(0, 1);
+  }
 }
+
+/* ---------- Formulários com persistência local (data-persistir) ---------- */
 
 function configurarFormulariosPersistentes() {
   $$("form[data-persistir]").forEach((form) => {
@@ -90,10 +103,14 @@ function configurarFormulariosPersistentes() {
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const invalidos = [...form.elements].filter((c) => c.willValidate && !c.checkValidity());
-      [...form.elements].forEach((c) => c.removeAttribute?.("aria-invalid"));
+      const campos = [...form.elements];
+      campos.forEach((c) => c.removeAttribute?.("aria-invalid"));
+      const invalidos = campos.filter((c) => c.willValidate && !c.checkValidity());
       if (invalidos.length) {
         invalidos.forEach((c) => c.setAttribute("aria-invalid", "true"));
+        // Se o campo estiver em uma aba escondida, mostra essa aba antes de focar
+        const painel = invalidos[0].closest('[role="tabpanel"]');
+        if (painel?.hidden) document.querySelector(`[aria-controls="${painel.id}"]`)?.click();
         invalidos[0].focus();
         toast("Verifique os campos destacados.", "erro");
         return;
@@ -105,14 +122,14 @@ function configurarFormulariosPersistentes() {
   });
 
   document.addEventListener("cf:salvo", (e) => {
-    if (e.detail === "cf-empresa") atualizarCabecalhoEmpresa();
+    if (["cf-empresa", "cf-logo"].includes(e.detail)) atualizarCartaoEmpresa();
   });
 }
 
 /* ---------- Inicialização ---------- */
 
 configurarFormulariosPersistentes(); // antes das telas: elas leem os valores salvos
-atualizarCabecalhoEmpresa();
+atualizarCartaoEmpresa();
 iniciarDashboard();
 iniciarWhatsApp();
 iniciarAgente();

@@ -1,45 +1,73 @@
 /* ==========================================================================
    Tela 5 — Configurações
-   Dados da empresa, redes sociais e integrações (WhatsApp, Instagram, IA, n8n).
+   Dados da empresa (com logo), redes sociais e integrações
+   (WhatsApp, Instagram, IA e n8n).
    ========================================================================== */
 
 import { gerarLinkWhatsApp } from "../whatsapp.js";
 import { integracoesDemo } from "../dados-demo.js";
-import { $, $$, icone, escapar, toast, lerArmazenado, gravarArmazenado } from "../ui.js";
+import { $, $$, icone, escapar, toast, lerArmazenado, gravarArmazenado, configurarAbas } from "../ui.js";
 
 const CHAVE_INTEGRACOES = "cf-integracoes";
+const CHAVE_LOGO = "cf-logo";
+const LIMITE_LOGO = 400 * 1024; // 400 KB (fica salvo no localStorage)
 let integracoes = lerArmazenado(CHAVE_INTEGRACOES, integracoesDemo);
 
 export function iniciarConfiguracoes() {
-  configurarAbas();
+  configurarAbas($("#view-configuracoes .settings"));
   configurarLinkWhatsApp();
+  configurarLogo();
   renderizarIntegracoes();
   $("#listaIntegracoes").addEventListener("click", alternarIntegracao);
+
+  // Botão "Salvar alterações" do topo envia o formulário da aba visível
+  $('[data-action="salvar-configuracoes"]').addEventListener("click", () => {
+    const visivel = $$("#view-configuracoes form[data-persistir]").find((f) => !f.hidden);
+    if (visivel) visivel.requestSubmit();
+    else toast("As integrações já são salvas automaticamente.");
+  });
 }
 
-/* ---------- Abas acessíveis (clique + setas do teclado) ---------- */
+/* ---------- Logo da empresa ---------- */
 
-function configurarAbas() {
-  const abas = $$(".tabs__tab");
+function configurarLogo() {
+  const entrada = $("#cfgLogo");
+  const nome = $("#cfgNome");
 
-  const ativar = (aba) => {
-    abas.forEach((a) => {
-      const ativa = a === aba;
-      a.classList.toggle("is-active", ativa);
-      a.setAttribute("aria-selected", String(ativa));
-      a.tabIndex = ativa ? 0 : -1;
-      $(`#${a.getAttribute("aria-controls")}`).hidden = !ativa;
-    });
-    aba.focus();
-  };
+  entrada.addEventListener("change", () => {
+    const arquivo = entrada.files[0];
+    entrada.value = "";
+    if (!arquivo) return;
+    if (!arquivo.type.startsWith("image/")) return toast("Selecione um arquivo de imagem.", "erro");
+    if (arquivo.size > LIMITE_LOGO) return toast("A imagem deve ter no máximo 400 KB.", "erro");
 
-  abas.forEach((aba, i) => {
-    aba.addEventListener("click", () => ativar(aba));
-    aba.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight") ativar(abas[(i + 1) % abas.length]);
-      if (e.key === "ArrowLeft") ativar(abas[(i - 1 + abas.length) % abas.length]);
-    });
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      gravarArmazenado(CHAVE_LOGO, leitor.result);
+      atualizarLogo();
+      toast("Logo atualizada.");
+    };
+    leitor.readAsDataURL(arquivo);
   });
+
+  $('[data-action="remover-logo"]').addEventListener("click", () => {
+    localStorage.removeItem(CHAVE_LOGO);
+    atualizarLogo();
+    toast("Logo removida.");
+  });
+
+  nome.addEventListener("input", () => {
+    $("#logoNome").textContent = nome.value || "Sua empresa";
+  });
+  $("#logoNome").textContent = nome.value;
+  atualizarLogo();
+}
+
+/* Atualiza a logo no formulário, no menu lateral e na prévia do Instagram */
+export function atualizarLogo() {
+  const logo = lerArmazenado(CHAVE_LOGO);
+  $("#logoPreview img").src = logo || "assets/logo.svg";
+  document.dispatchEvent(new CustomEvent("cf:salvo", { detail: CHAVE_LOGO }));
 }
 
 /* ---------- Link wa.me gerado com js/whatsapp.js ---------- */
@@ -93,17 +121,17 @@ function configurarLinkWhatsApp() {
 function renderizarIntegracoes() {
   $("#listaIntegracoes").innerHTML = integracoes
     .map((i) => `
-      <article class="card integration">
+      <article class="integration">
         <div class="integration__head">
           <span class="integration__logo" style="background:${i.cor}">${icone(i.icone)}</span>
           <div>
-            <h3 class="card__title">${escapar(i.nome)}</h3>
+            <h3>${escapar(i.nome)}</h3>
             <p>${escapar(i.descricao)}</p>
           </div>
         </div>
         <div class="integration__foot">
           <span class="integration__state ${i.conectado ? "is-on" : ""}">${i.conectado ? "Conectado" : "Desconectado"}</span>
-          <button type="button" class="btn btn--sm ${i.conectado ? "btn--secondary" : "btn--primary"}" data-integracao="${i.id}">
+          <button type="button" class="btn btn--sm ${i.conectado ? "btn--outline" : "btn--primary"}" data-integracao="${i.id}">
             ${i.conectado ? "Desconectar" : "Conectar"}
           </button>
         </div>

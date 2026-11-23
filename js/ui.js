@@ -33,6 +33,44 @@ export function escapar(texto) {
     .replaceAll("'", "&#39;");
 }
 
+/* Rótulos curtos usados nos filtros da caixa de entrada */
+export const ROTULO_FILTRO = Object.freeze({
+  [STATUS.EM_ATENDIMENTO]: "IA",
+  [STATUS.AGUARDANDO_HUMANO]: "Aguardando",
+  [STATUS.ASSUMIDO]: "Humanos",
+  [STATUS.RESOLVIDO]: "Resolvidos"
+});
+
+/* Cor de avatar estável a partir do nome (1 a 5, ver .avatar[data-cor]) */
+export function corAvatar(nome) {
+  let soma = 0;
+  for (const letra of String(nome)) soma += letra.charCodeAt(0);
+  return (soma % 5) + 1;
+}
+
+/* Abas acessíveis (clique + setas do teclado) dentro de um contêiner */
+export function configurarAbas(container) {
+  const abas = $$('[role="tab"]', container);
+  const ativar = (aba, focar = true) => {
+    abas.forEach((a) => {
+      const ativa = a === aba;
+      a.classList.toggle("is-active", ativa);
+      a.setAttribute("aria-selected", String(ativa));
+      a.tabIndex = ativa ? 0 : -1;
+      document.getElementById(a.getAttribute("aria-controls")).hidden = !ativa;
+    });
+    if (focar) aba.focus();
+  };
+  abas.forEach((aba, i) => {
+    aba.addEventListener("click", () => ativar(aba));
+    aba.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight") ativar(abas[(i + 1) % abas.length]);
+      if (e.key === "ArrowLeft") ativar(abas[(i - 1 + abas.length) % abas.length]);
+    });
+  });
+  return (id) => ativar(abas.find((a) => a.id === id), false);
+}
+
 export function badgeStatus(status) {
   return `<span class="badge badge--${status}">${ROTULO_STATUS[status] ?? status}</span>`;
 }

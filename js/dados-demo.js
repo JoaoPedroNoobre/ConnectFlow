@@ -27,7 +27,7 @@ export const atendimentosDemo = [
     interesse: "Encomenda para festa",
     mensagens: [
       { autor: "cliente", texto: "Olá, vim do Instagram!", hora: "09:12" },
-      { autor: "ia", texto: "Olá, Maria! Eu sou a Flora, assistente virtual. Como posso ajudar?", hora: "09:12" },
+      { autor: "ia", texto: "Olá, Maria! Sou o assistente virtual da loja. Como posso ajudar?", hora: "09:12" },
       { autor: "cliente", texto: "Vocês fazem bolo para 50 pessoas? É para sábado.", hora: "09:13" },
       { autor: "ia", texto: "Fazemos sim! O bolo de chocolate serve até 20 pessoas por R$ 89,90. Para 50 pessoas, vou chamar um atendente para montar um orçamento personalizado.", hora: "09:13" },
       { autor: "sistema", texto: "A IA transferiu a conversa para um atendente humano", hora: "09:13" }
@@ -103,16 +103,34 @@ export const atendimentosDemo = [
   })
 ];
 
-/* Atendimentos por dia (IA × humano) — gráfico do Dashboard */
-export const semanaDemo = [
-  { dia: "Seg", ia: 34, humano: 9 },
-  { dia: "Ter", ia: 41, humano: 12 },
-  { dia: "Qua", ia: 38, humano: 10 },
-  { dia: "Qui", ia: 47, humano: 15 },
-  { dia: "Sex", ia: 52, humano: 18 },
-  { dia: "Sáb", ia: 61, humano: 21 },
-  { dia: "Dom", ia: 22, humano: 6 }
-];
+/* Métricas do Dashboard por período (seletor "Últimos 7 dias")
+   clientes = finalizadosIA + emTratamento + naoConcluidos + intervencaoHumana */
+export const periodosDemo = {
+  hoje: {
+    rotulo: "Hoje",
+    finalizadosIA: 31, emTratamento: 9, naoConcluidos: 4, intervencaoHumana: 6,
+    tendencia: { clientes: 8 },
+    origem: { instagramPosts: 52, instagramDirect: 20, outros: 16, linkDireto: 12 },
+    vendas: 1840, tendenciaVendas: 12,
+    serieVendas: [120, 90, 210, 160, 240, 190, 300, 260, 270]
+  },
+  semana: {
+    rotulo: "Últimos 7 dias",
+    finalizadosIA: 212, emTratamento: 48, naoConcluidos: 32, intervencaoHumana: 36,
+    tendencia: { clientes: 12 },
+    origem: { instagramPosts: 58, instagramDirect: 17, outros: 15, linkDireto: 10 },
+    vendas: 12480, tendenciaVendas: 27,
+    serieVendas: [900, 1300, 1150, 1700, 1500, 1950, 1800, 2300, 2600]
+  },
+  mes: {
+    rotulo: "Últimos 30 dias",
+    finalizadosIA: 874, emTratamento: 121, naoConcluidos: 140, intervencaoHumana: 165,
+    tendencia: { clientes: 18 },
+    origem: { instagramPosts: 55, instagramDirect: 19, outros: 14, linkDireto: 12 },
+    vendas: 48920, tendenciaVendas: 21,
+    serieVendas: [8200, 9100, 8700, 10400, 9800, 11900, 11200, 12800, 14100]
+  }
+};
 
 /* Catálogo usado pelo Agente de IA */
 export const catalogoDemo = [
@@ -125,22 +143,27 @@ export const catalogoDemo = [
 /* Publicações do Instagram Studio */
 export const postsDemo = [
   {
-    id: 1, formato: "feed", status: "agendado", imagem: "",
-    legenda: "Sábado é dia de bolo! 🍫 Encomende o seu pelo link da bio.",
-    hashtags: "#confeitaria #bolodechocolate", data: proximaData(2), hora: "18:00"
+    id: 1, formato: "feed", status: "agendado", imagem: "", fundo: 1,
+    legenda: "Novo produto na loja! 🍫 Bolo de chocolate belga, encomende pelo link da bio.",
+    hashtags: "#confeitaria #bolodechocolate", data: proximaData(2), hora: "14:00"
   },
   {
-    id: 2, formato: "story", status: "agendado", imagem: "",
-    legenda: "Enquete: qual sabor de brigadeiro você prefere?",
-    hashtags: "#brigadeirogourmet", data: proximaData(4), hora: "12:00"
+    id: 2, formato: "feed", status: "agendado", imagem: "", fundo: 2,
+    legenda: "Promoção da semana 🔥 Torta de limão com 15% de desconto.",
+    hashtags: "#promocao #tortadelimao", data: proximaData(4), hora: "10:00"
   },
   {
-    id: 3, formato: "feed", status: "rascunho", imagem: "",
+    id: 3, formato: "story", status: "agendado", imagem: "", fundo: 3,
+    legenda: "Quem somos? Conheça a nossa cozinha.",
+    hashtags: "#bastidores", data: proximaData(6), hora: "18:00"
+  },
+  {
+    id: 4, formato: "feed", status: "rascunho", imagem: "", fundo: 4,
     legenda: "Novidade chegando… 👀",
     hashtags: "", data: "", hora: ""
   },
   {
-    id: 4, formato: "feed", status: "publicado", imagem: "",
+    id: 5, formato: "feed", status: "publicado", imagem: "", fundo: 2,
     legenda: "Torta de limão fresquinha saindo do forno! 🍋",
     hashtags: "#tortadelimao #docesartesanais", data: proximaData(-3), hora: "17:30"
   }
