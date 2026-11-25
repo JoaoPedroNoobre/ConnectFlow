@@ -1,8 +1,8 @@
 ﻿/* ==========================================================================
-   Tela 3 â€” Agente de IA
-   ConfiguraÃ§Ã£o do assistente virtual (Geral, CatÃ¡logo, Respostas e
-   Comportamento) e uma prÃ©via que SIMULA localmente as respostas com base no
-   catÃ¡logo. A IA real serÃ¡ conectada via API/n8n pelo backend do projeto.
+   Tela 3 — Agente de IA
+   Configuração do assistente virtual (Geral, Catálogo, Respostas e
+   Comportamento) e uma prévia que SIMULA localmente as respostas com base no
+   catálogo. A IA real será conectada via API/n8n pelo backend do projeto.
    ========================================================================== */
 
 import { catalogoDemo } from "../dados-demo.js";
@@ -23,7 +23,7 @@ export function iniciarAgente() {
   reiniciarTeste();
   atualizarIndicadoresIA();
 
-  // CatÃ¡logo (campos sem <form> prÃ³prio para nÃ£o aninhar formulÃ¡rios)
+  // Catálogo (campos sem <form> próprio para não aninhar formulários)
   $('[data-action="adicionar-item"]').addEventListener("click", adicionarItem);
   $("#catalogoNovo").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -33,7 +33,7 @@ export function iniciarAgente() {
   });
   $("#tabelaCatalogo").addEventListener("click", removerItem);
 
-  // PrÃ©via
+  // Prévia
   $("#formTeste").addEventListener("submit", (e) => {
     e.preventDefault();
     const campo = $("#entradaTeste");
@@ -83,7 +83,7 @@ function atualizarIndicadoresIA() {
   botao.querySelector("use").setAttribute("href", `assets/icons.svg#${ativa ? "i-pause" : "i-play"}`);
 }
 
-/* ---------- Contador das instruÃ§Ãµes ---------- */
+/* ---------- Contador das instruções ---------- */
 
 function configurarContador() {
   const campo = $("#agInstrucoes");
@@ -96,20 +96,20 @@ function configurarContador() {
   atualizar();
 }
 
-/* ---------- CatÃ¡logo ---------- */
+/* ---------- Catálogo ---------- */
 
 function renderizarCatalogo() {
   const corpo = $("#tabelaCatalogo");
   if (!catalogo.length) {
     corpo.innerHTML = `<tr><td colspan="4"><div class="empty-state">${icone("i-package")}
-      <strong>CatÃ¡logo vazio</strong><span>Adicione produtos ou serviÃ§os para a IA consultar.</span></div></td></tr>`;
+      <strong>Catálogo vazio</strong><span>Adicione produtos ou serviços para a IA consultar.</span></div></td></tr>`;
     return;
   }
   corpo.innerHTML = catalogo
     .map((item) => `
       <tr>
         <td><strong>${escapar(item.nome)}</strong></td>
-        <td>${escapar(item.categoria || "â€”")}</td>
+        <td>${escapar(item.categoria || "—")}</td>
         <td class="num">${formatarPreco(item.preco)}</td>
         <td><button class="icon-btn icon-btn--danger" type="button" data-remover="${item.id}" aria-label="Remover ${escapar(item.nome)}">${icone("i-trash")}</button></td>
       </tr>`)
@@ -131,7 +131,7 @@ function adicionarItem() {
   nomeCampo.setAttribute("aria-invalid", String(!nome));
   precoCampo.setAttribute("aria-invalid", String(!precoValido));
   if (!nome || !precoValido) {
-    toast("Informe o nome e um preÃ§o vÃ¡lido.", "erro");
+    toast("Informe o nome e um preço válido.", "erro");
     return;
   }
 
@@ -139,7 +139,7 @@ function adicionarItem() {
   salvarCatalogo();
   [nomeCampo, $("#catCategoria"), precoCampo].forEach((c) => { c.value = ""; });
   nomeCampo.focus();
-  toast(`"${nome}" adicionado ao catÃ¡logo.`);
+  toast(`"${nome}" adicionado ao catálogo.`);
 }
 
 function removerItem(e) {
@@ -149,12 +149,12 @@ function removerItem(e) {
   const item = catalogo.find((i) => i.id === id);
   catalogo = catalogo.filter((i) => i.id !== id);
   salvarCatalogo();
-  toast(`"${item?.nome}" removido do catÃ¡logo.`);
+  toast(`"${item?.nome}" removido do catálogo.`);
 }
 
-/* ---------- PrÃ©via do agente (simulaÃ§Ã£o local) ---------- */
+/* ---------- Prévia do agente (simulação local) ---------- */
 
-const normalizar = (t) => t.normalize("NFD").replace(/[Ì€-Í¯]/g, "").toLowerCase();
+const normalizar = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function adicionarMensagemTeste(autor, texto) {
   const area = $("#mensagensTeste");
@@ -176,7 +176,7 @@ function reiniciarTeste() {
   $("#mensagensTeste").innerHTML = "";
   const cfg = lerFormulario($("#formAgente"));
   if (cfg.ativo) adicionarMensagemTeste("ia", cfg.boasVindas);
-  else adicionarMensagemTeste("sistema", "IA pausada â€” as conversas aguardam um atendente");
+  else adicionarMensagemTeste("sistema", "IA pausada — as conversas aguardam um atendente");
 }
 
 
@@ -187,23 +187,23 @@ async function perguntar(texto) {
 
   adicionarMensagemTeste("cliente", pergunta);
 
-  // Verifica se a IA estÃ¡ ativada
+  // Verifica se a IA está ativada
   if (!iaAtiva()) {
     adicionarMensagemTeste("sistema", "IA pausada. Aguarde um atendente.");
     return;
   }
 
-  const digitando = adicionarMensagemTeste("sistema", "digitandoâ€¦");
+  const digitando = adicionarMensagemTeste("sistema", "digitando…");
 
   try {
-    // Busca as informaÃ§Ãµes da empresa
+    // Busca as informações da empresa
     const dadosEmpresa = lerArmazenado("cf-empresa") || {};
 
     const empresa = {
       nome: dadosEmpresa.nome || "Confeitaria ConnectFlow",
       descricao: dadosEmpresa.descricao || "Confeitaria de bolos e doces.",
-      endereco: dadosEmpresa.endereco || "NÃ£o informado",
-      horario: dadosEmpresa.horario || "NÃ£o informado"
+      endereco: dadosEmpresa.endereco || "Não informado",
+      horario: dadosEmpresa.horario || "Não informado"
     };
 
     // Envia a pergunta ao nosso servidor
@@ -234,7 +234,7 @@ async function perguntar(texto) {
   } catch (erro) {
     adicionarMensagemTeste(
       "sistema",
-      "NÃ£o foi possÃ­vel consultar a IA. Tente novamente."
+      "Não foi possível consultar a IA. Tente novamente."
     );
   } finally {
     digitando.remove();
@@ -247,51 +247,51 @@ function gerarResposta(pergunta) {
   const cfg = lerFormulario($("#formAgente"));
   const empresa = lerArmazenado("cf-empresa") ?? {};
   const t = normalizar(pergunta);
-  const fecho = ["consultivo", "descontraido"].includes(cfg.tom) ? " ðŸ˜Š" : "";
+  const fecho = ["consultivo", "descontraido"].includes(cfg.tom) ? " 😊" : "";
   const ia = (texto) => [["ia", texto]];
   const transferir = (motivo) => [
     ["ia", cfg.msgTransferencia],
-    ["sistema", `${motivo} â†’ conversa movida para "Aguardando humano"`]
+    ["sistema", `${motivo} → conversa movida para "Aguardando humano"`]
   ];
 
-  if (!cfg.ativo) return [["sistema", "IA pausada â€” a conversa aguarda um atendente"]];
+  if (!cfg.ativo) return [["sistema", "IA pausada — a conversa aguarda um atendente"]];
 
   if (cfg.transfPedido && /atendente|humano|pessoa|gerente/.test(t)) return transferir("Cliente pediu um atendente");
-  if (cfg.transfReclamacao && /reclama|atras|problema|errad|pessim/.test(t)) return transferir("ReclamaÃ§Ã£o identificada");
-  if (cfg.transfNegociacao && /desconto|negoci|mais barato|agend/.test(t)) return transferir("Pedido de negociaÃ§Ã£o ou agendamento");
+  if (cfg.transfReclamacao && /reclama|atras|problema|errad|pessim/.test(t)) return transferir("Reclamação identificada");
+  if (cfg.transfNegociacao && /desconto|negoci|mais barato|agend/.test(t)) return transferir("Pedido de negociação ou agendamento");
 
   if (/^(oi|ola|bom dia|boa tarde|boa noite)\b/.test(t)) return ia(cfg.boasVindas);
 
-  // Busca um item do catÃ¡logo citado na pergunta
+  // Busca um item do catálogo citado na pergunta
   const palavrasDe = (nome) => normalizar(nome).split(/\W+/).filter((p) => p.length > 3);
   const item = catalogo.find((i) => palavrasDe(i.nome).length && palavrasDe(i.nome).every((p) => t.includes(p)))
     ?? catalogo.find((i) => palavrasDe(i.nome).some((p) => p.length > 4 && t.includes(p)));
 
   if (item && (cfg.habCatalogo || cfg.habPrecos)) {
-    let resposta = cfg.habPrecos ? `${item.nome} custa ${formatarPreco(item.preco)}.` : `Temos ${item.nome} disponÃ­vel.`;
+    let resposta = cfg.habPrecos ? `${item.nome} custa ${formatarPreco(item.preco)}.` : `Temos ${item.nome} disponível.`;
     if (cfg.habApresentar) {
       const sugestao = catalogo.find((i) => i.id !== item.id && i.categoria === item.categoria)
         ?? catalogo.find((i) => i.id !== item.id);
-      if (sugestao) resposta += ` VocÃª tambÃ©m pode gostar de: ${sugestao.nome}.`;
+      if (sugestao) resposta += ` Você também pode gostar de: ${sugestao.nome}.`;
     }
     return ia(resposta + fecho);
   }
 
   const querPrecos = /preco|valor|quanto/.test(t);
   if ((cfg.habCatalogo && /produto|catalogo|cardapio|opcoes|vende|servico|tem o que|quais/.test(t)) || (cfg.habPrecos && querPrecos)) {
-    if (!catalogo.length) return ia("No momento nosso catÃ¡logo estÃ¡ sendo atualizado.");
+    if (!catalogo.length) return ia("No momento nosso catálogo está sendo atualizado.");
     const comPreco = cfg.habPrecos;
-    const lista = catalogo.map((i) => (comPreco ? `â€¢ ${i.nome}: ${formatarPreco(i.preco)}` : `â€¢ ${i.nome}`)).join("\n");
-    return ia(`${querPrecos ? "Confira nossos preÃ§os" : "Este Ã© o nosso catÃ¡logo"}:\n${lista}\nSobre qual deseja saber mais?${fecho}`);
+    const lista = catalogo.map((i) => (comPreco ? `• ${i.nome}: ${formatarPreco(i.preco)}` : `• ${i.nome}`)).join("\n");
+    return ia(`${querPrecos ? "Confira nossos preços" : "Este é o nosso catálogo"}:\n${lista}\nSobre qual deseja saber mais?${fecho}`);
   }
 
   if (cfg.habDuvidas && /horario|abre|fecha|funciona/.test(t)) {
-    return ia(`Nosso horÃ¡rio de atendimento Ã©: ${empresa.horario || "Seg. a sÃ¡b., 8h Ã s 18h"}.${fecho}`);
+    return ia(`Nosso horário de atendimento é: ${empresa.horario || "Seg. a sáb., 8h às 18h"}.${fecho}`);
   }
   if (cfg.habDuvidas && /endereco|onde fica|localiza/.test(t)) {
-    return ia(empresa.endereco ? `Estamos em: ${empresa.endereco}.` : "O endereÃ§o ainda nÃ£o foi cadastrado nas configuraÃ§Ãµes da empresa.");
+    return ia(empresa.endereco ? `Estamos em: ${empresa.endereco}.` : "O endereço ainda não foi cadastrado nas configurações da empresa.");
   }
 
-  if (cfg.transfSemResposta) return transferir("A IA nÃ£o encontrou uma resposta");
-  return ia("Desculpe, nÃ£o entendi. Pode reformular a pergunta?");
+  if (cfg.transfSemResposta) return transferir("A IA não encontrou uma resposta");
+  return ia("Desculpe, não entendi. Pode reformular a pergunta?");
 }
