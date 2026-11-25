@@ -251,29 +251,30 @@
               </div>
 
               <!-- Catálogo -->
-              <div class="tab-panel" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
-                <p class="panel-hint">Catálogo do Supabase usado pela IA. Cadastro e remoção indisponíveis nesta etapa de leitura.</p>
-                <div class="catalog-form" id="catalogoNovo">
-                  <div class="field">
+              <div class="painel-aba" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
+                <p class="texto-dica">Os produtos cadastrados aqui são usados pela IA. A remoção ainda está indisponível.</p>
+                <div class="formulario-catalogo">
+                  <div class="campo">
                     <label for="catNome">Produto ou serviço</label>
-                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura" disabled>
+                    <input id="catNome" name="nome" form="formProduto" type="text" maxlength="120" placeholder="Ex.: Bolo de cenoura" required>
                   </div>
                   <div class="campo">
                     <label for="catCategoria">Categoria</label>
-                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos" disabled>
+                    <input id="catCategoria" name="categoria" form="formProduto" type="text" maxlength="120" placeholder="Ex.: Bolos">
                   </div>
                   <div class="campo">
                     <label for="catPreco">Preço (R$)</label>
-                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00" disabled>
+                    <input id="catPreco" name="preco" form="formProduto" type="number" min="0" step="0.01" placeholder="0,00" required>
                   </div>
-                  <button class="btn btn--outline" type="button" data-action="adicionar-item" disabled>
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
+                  <button class="botao botao-contorno" type="submit" form="formProduto" data-action="adicionar-item">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
                   </button>
                 </div>
-                <button class="btn btn--outline btn--sm" type="button" id="atualizarCatalogo">Atualizar catálogo</button>
-                <p class="panel-hint" id="estadoCatalogo" role="status"></p>
-                <div class="table-wrap">
-                  <table class="table">
+                <p class="texto-dica" id="estadoCadastro" role="status"></p>
+                <button class="botao botao-contorno botao-pequeno" type="button" id="atualizarCatalogo">Atualizar catálogo</button>
+                <p class="texto-dica" id="estadoCatalogo" role="status"></p>
+                <div class="tabela-rolagem">
+                  <table class="tabela">
                     <thead>
                       <tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col" class="coluna-numero">Preço</th><th scope="col"><span class="texto-leitor-tela">Ações</span></th></tr>
                     </thead>
@@ -348,6 +349,9 @@
 
               <button class="botao botao-roxo botao-largura-total botao-salvar-agente" type="submit">Salvar alterações</button>
             </form>
+
+            <!-- Os campos com form="formProduto" têm envio separado das configurações. -->
+            <form id="formProduto" hidden></form>
 
             <!-- Prévia do agente (simulação local) -->
             <aside class="cartao previa-agente" aria-labelledby="tituloPrevia">

@@ -9,12 +9,13 @@ import {
 } from "../ui.js";
 
 const CHAVE_AGENTE = "cf-agente";
-const CHAVE_CATALOGO = "cf-catalogo";
 let catalogo = [];
 
+// Liga os eventos da tela e carrega o catálogo ao abrir o sistema.
 export function iniciarAgente() {
   const form = $("#formAgente");
   configurarAbas(form);
+  $("#formProduto").addEventListener("submit", adicionarItem);
   $("#atualizarCatalogo").addEventListener("click", carregarCatalogo);
   carregarCatalogo();
   configurarContador();
@@ -89,8 +90,10 @@ function configurarContador() {
 // Busca os produtos reais e informa quando a consulta falha.
 async function carregarCatalogo() {
   const botao = $("#atualizarCatalogo");
+  const adicionar = $('[data-action="adicionar-item"]');
   const estado = $("#estadoCatalogo");
   botao.disabled = true;
+  adicionar.disabled = true;
   estado.textContent = "Carregando catálogo…";
   $("#tabelaCatalogo").textContent = "";
   catalogo = [];
@@ -110,13 +113,15 @@ async function carregarCatalogo() {
     estado.textContent = "Não foi possível carregar o catálogo do Supabase. Tente novamente.";
   } finally {
     botao.disabled = false;
+    adicionar.disabled = false;
   }
 }
 
+// Coloca na tabela os dados retornados pelo servidor.
 function renderizarCatalogo() {
   const corpo = $("#tabelaCatalogo");
   if (!catalogo.length) {
-    corpo.innerHTML = `<tr><td colspan="4"><div class="empty-state">${icone("i-package")}
+    corpo.innerHTML = `<tr><td colspan="4"><div class="estado-vazio">${icone("i-package")}
       <strong>Catálogo vazio</strong><span>A empresa ainda não tem produtos cadastrados.</span></div></td></tr>`;
     return;
   }
@@ -125,47 +130,61 @@ function renderizarCatalogo() {
       <tr>
         <td><strong>${escapar(item.nome)}</strong></td>
         <td>${escapar(item.categoria || "—")}</td>
-        <td class="num">${formatarPreco(item.preco)}</td>
-        <td><button class="icon-btn icon-btn--danger" type="button" data-remover="${escapar(item.id)}" aria-label="Remover ${escapar(item.nome)}" disabled>${icone("i-trash")}</button></td>
+        <td class="coluna-numero">${formatarPreco(item.preco)}</td>
+        <td class="coluna-acoes"><button class="botao-icone botao-icone-excluir" type="button" data-remover="${escapar(item.id)}" aria-label="Remover ${escapar(item.nome)}" disabled>${icone("i-trash")}</button></td>
       </tr>`)
     .join("");
 }
 
-// Guarda a lógica anterior para a próxima etapa. Os botões estão desativados.
-function salvarCatalogo() {
-  gravarArmazenado(CHAVE_CATALOGO, catalogo);
-  renderizarCatalogo();
-}
+// Envia o produto ao servidor e só limpa os campos depois da confirmação.
+async function adicionarItem(e) {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const botao = $('[data-action="adicionar-item"]');
+  const atualizar = $("#atualizarCatalogo");
+  const estado = $("#estadoCadastro");
+  if (botao.disabled) return;
 
-function adicionarItem() {
-  const nomeCampo = $("#catNome");
-  const precoCampo = $("#catPreco");
-  const nome = nomeCampo.value.trim();
-  const preco = Number(precoCampo.value);
-  const precoValido = precoCampo.value !== "" && preco >= 0;
-
-  nomeCampo.setAttribute("aria-invalid", String(!nome));
-  precoCampo.setAttribute("aria-invalid", String(!precoValido));
-  if (!nome || !precoValido) {
-    toast("Informe o nome e um preço válido.", "erro");
+  const campos = [form.elements.nome, form.elements.categoria, form.elements.preco];
+  const produto = {
+    nome: form.elements.nome.value.trim(),
+    categoria: form.elements.categoria.value.trim(),
+    preco: form.elements.preco.valueAsNumber
+  };
+  if (!produto.nome) {
+    estado.textContent = "Informe o nome do produto.";
+    form.elements.nome.focus();
     return;
   }
 
-  catalogo = [...catalogo, { id: Date.now(), nome, categoria: $("#catCategoria").value.trim(), preco }];
-  salvarCatalogo();
-  [nomeCampo, $("#catCategoria"), precoCampo].forEach((c) => { c.value = ""; });
-  nomeCampo.focus();
-  toast(`"${nome}" adicionado ao catálogo.`);
-}
+  // Evita envios repetidos enquanto o cadastro e a atualização estão em andamento.
+  botao.disabled = true;
+  atualizar.disabled = true;
+  for (const campo of campos) campo.disabled = true;
+  estado.textContent = "Cadastrando produto…";
 
-function removerItem(e) {
-  const botao = e.target.closest("[data-remover]");
-  if (!botao) return;
-  const id = Number(botao.dataset.remover);
-  const item = catalogo.find((i) => i.id === id);
-  catalogo = catalogo.filter((i) => i.id !== id);
-  salvarCatalogo();
-  toast(`"${item?.nome}" removido do catálogo.`);
+  try {
+    const resposta = await fetch("/api/produtos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(produto)
+    });
+    const dados = await resposta.json().catch(() => null);
+    if (resposta.status !== 201 || !dados?.mensagem) {
+      estado.textContent = dados?.erro || "Não foi possível confirmar o cadastro. Atualize o catálogo antes de tentar novamente.";
+      return;
+    }
+
+    estado.textContent = dados.mensagem;
+    form.reset();
+    await carregarCatalogo();
+  } catch {
+    estado.textContent = "Não foi possível confirmar o cadastro. Atualize o catálogo antes de tentar novamente.";
+  } finally {
+    botao.disabled = false;
+    atualizar.disabled = false;
+    for (const campo of campos) campo.disabled = false;
+  }
 }
 
 /* ---------- Prévia do agente (simulação local) ---------- */
