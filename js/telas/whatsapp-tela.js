@@ -9,19 +9,20 @@ import { gerarLinkWhatsApp } from "../whatsapp.js";
 import { consultarGemini, iaAtiva } from "./agente.js";
 import {
   listarAtendimentos, buscarAtendimento, inscrever,
-  mudarStatus, adicionarMensagem, novoAtendimento
+  carregarAtendimentos, mudarStatus, adicionarMensagem, novoAtendimento
 } from "../estado.js";
 import {
   $, icone, escapar, iniciais, badgeStatus, horaAtual, formatarTelefone,
   toast, lerArmazenado, corAvatar, ROTULO_STATUS, ROTULO_FILTRO
 } from "../ui.js";
 
-const estado = { filtro: "todos", busca: "", selecionadoId: null };
+const estado = { filtro: "todos", busca: "", selecionadoId: null, carregando: false, erroCarregamento: "" };
 // Guarda a consulta em andamento de cada conversa.
 const consultasIA = new Map();
 
 const els = {};
 
+// Liga os controles da tela e inicia a busca dos atendimentos salvos.
 export function iniciarWhatsApp() {
   els.layout = $("#chatLayout");
   els.filtros = $("#filtrosStatus");
@@ -32,6 +33,7 @@ export function iniciarWhatsApp() {
   els.modal = $("#modalAtendimento");
   els.formModal = $("#formAtendimento");
   els.erroModal = $("#erroAtendimento");
+  els.botaoNovo = $('[data-action="novo-atendimento"]');
 
   els.busca.addEventListener("input", () => {
     estado.busca = els.busca.value.trim().toLowerCase();
@@ -58,6 +60,29 @@ export function iniciarWhatsApp() {
 
   inscrever(renderizarTudo);
   renderizarTudo();
+  carregarConversas();
+}
+
+// Atualiza a lista sem mudar a tela que o usuário está visitando.
+async function carregarConversas() {
+  if (estado.carregando) return;
+  estado.carregando = true;
+  estado.erroCarregamento = "";
+  els.botaoNovo.disabled = true;
+  renderizarLista();
+
+  try {
+    await carregarAtendimentos();
+    if (document.body.dataset.tela === "whatsapp") {
+      abrirConversa(location.hash.split("/")[1]);
+    }
+  } catch (erro) {
+    estado.erroCarregamento = erro.message;
+  } finally {
+    estado.carregando = false;
+    els.botaoNovo.disabled = false;
+    renderizarLista();
+  }
 }
 
 /* Chamado pelo roteador: #whatsapp ou #whatsapp/<id> */
@@ -102,13 +127,29 @@ function renderizarFiltros() {
     .join("");
 }
 
+// Mostra a busca, os filtros e o resultado da leitura do Supabase.
 function renderizarLista() {
   const atendimentos = listarAtendimentos();
   let itens = atendimentos;
   if (estado.filtro !== "todos") itens = filtrarAtendimentos(itens, estado.filtro);
   if (estado.busca) itens = itens.filter((a) => a.cliente.toLowerCase().includes(estado.busca));
 
+  let aviso = "";
+  if (estado.carregando) {
+    aviso = '<li class="estado-vazio" role="status">Carregando atendimentos…</li>';
+  } else if (estado.erroCarregamento) {
+    aviso = `
+      <li class="estado-vazio">
+        <p role="alert">${escapar(estado.erroCarregamento)}</p>
+        <button type="button" class="botao botao-contorno botao-pequeno" data-action="recarregar-atendimentos">Tentar novamente</button>
+      </li>`;
+  }
+
   if (!itens.length) {
+    if (aviso) {
+      els.lista.innerHTML = aviso;
+      return;
+    }
     const dica = atendimentos.length
       ? "Altere o filtro ou a busca."
       : "Use Novo atendimento para iniciar uma conversa.";
@@ -118,7 +159,7 @@ function renderizarLista() {
     return;
   }
 
-  els.lista.innerHTML = itens
+  els.lista.innerHTML = aviso + itens
     .map((a) => {
       const ultima = a.mensagens.at(-1);
       const ativo = a.id === estado.selecionadoId;
@@ -289,7 +330,7 @@ function renderizarInfo() {
       ${badgeStatus(a.status)}
     </div>
     <dl class="lista-dados-cliente">
-      <div><dt>Telefone</dt><dd>${escapar(formatarTelefone(a.telefone))}</dd></div>
+      <div><dt>Telefone</dt><dd>${escapar(formatarTelefone(a.telefone) || "—")}</dd></div>
       <div><dt>Origem do contato</dt><dd>${escapar(a.origem)}</dd></div>
       <div><dt>Interesse</dt><dd>${escapar(a.interesse)}</dd></div>
       <div><dt>Protocolo</dt><dd>#${escapar(a.id)}</dd></div>
@@ -342,6 +383,9 @@ function tratarAcao(e) {
       break;
     case "novo-atendimento":
       abrirModal();
+      break;
+    case "recarregar-atendimentos":
+      carregarConversas();
       break;
   }
 }
@@ -426,19 +470,29 @@ function abrirModal() {
   $("#novoNome").focus();
 }
 
+// Fecha o formulário e mostra sucesso só depois que o banco confirma.
 function configurarModal() {
+  const botao = $('button[type="submit"]', els.formModal);
+
   els.modal.addEventListener("click", (e) => {
+    if (botao.disabled) return;
     if (e.target === els.modal || e.target.closest('[data-action="fechar-modal"]')) els.modal.close();
   });
+  els.modal.addEventListener("cancel", (e) => {
+    if (botao.disabled) e.preventDefault();
+  });
 
-  els.formModal.addEventListener("submit", (e) => {
+  els.formModal.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (botao.disabled) return;
+    botao.disabled = true;
+    els.erroModal.hidden = true;
     const nome = els.formModal.elements.nome.value;
     const telefone = els.formModal.elements.telefone.value;
 
     try {
       gerarLinkWhatsApp(telefone); // valida o telefone (DDI + número)
-      const criado = novoAtendimento(nome, telefone.replace(/\D/g, ""));
+      const criado = await novoAtendimento(nome, telefone.replace(/\D/g, ""));
       els.modal.close();
       estado.filtro = "todos";
       location.hash = `whatsapp/${criado.id}`;
@@ -446,6 +500,8 @@ function configurarModal() {
     } catch (erro) {
       els.erroModal.textContent = erro.message;
       els.erroModal.hidden = false;
+    } finally {
+      botao.disabled = false;
     }
   });
 }
