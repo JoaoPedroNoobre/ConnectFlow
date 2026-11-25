@@ -387,8 +387,8 @@ async function receberMensagemCliente(atendimento, texto) {
   try {
     const resposta = await consultarGemini(texto, consulta.signal);
     mensagem = { autor: "ia", texto: resposta };
-  } catch {
-    mensagem = { autor: "sistema", texto: "Não foi possível consultar o Gemini. Você pode assumir o atendimento ou tentar de novo." };
+  } catch (erro) {
+    mensagem = { autor: "sistema", texto: erro.message };
   }
 
   // Uma consulta cancelada já saiu da lista e pode ter sido substituída.

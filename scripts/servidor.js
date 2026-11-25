@@ -1,7 +1,7 @@
 
 /*
   ConnectFlow - Servidor local
-  Abre o site e conecta o chat com o Gemini.
+  Abre o site, consulta o catálogo e conecta o chat com o Gemini.
 */
 
 import { createServer } from "node:http";
@@ -24,6 +24,46 @@ const TIPOS = {
   ".json": "application/json"
 };
 
+function responderJson(res, status, dados) {
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  res.end(JSON.stringify(dados));
+}
+
+// Consulta apenas os produtos da empresa de demonstração.
+async function consultarProdutos() {
+  const base = process.env.SUPABASE_URL?.trim();
+  const chave = process.env.SUPABASE_SECRET_KEY?.trim();
+
+  if (!base || !chave) {
+    return { status: 503, erro: "O catálogo do Supabase não está configurado no servidor." };
+  }
+
+  try {
+    const url = new URL("/rest/v1/produtos", base);
+    if (url.protocol !== "https:") throw new Error("O Supabase exige HTTPS.");
+
+    url.searchParams.set("select", "id,nome,categoria,preco");
+    url.searchParams.set("empresa_id", "eq.1");
+    url.searchParams.set("order", "id.asc");
+
+    const resposta = await fetch(url, {
+      headers: { apikey: chave },
+      redirect: "error",
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!resposta.ok) throw new Error("O Supabase recusou a consulta.");
+
+    const produtos = await resposta.json();
+    if (!Array.isArray(produtos)) throw new Error("A resposta não é uma lista.");
+    return { produtos };
+  } catch {
+    return { status: 502, erro: "Não foi possível carregar o catálogo do Supabase. Tente novamente." };
+  }
+}
+
 createServer(async (req, res) => {
 
   let caminho;
@@ -40,6 +80,22 @@ createServer(async (req, res) => {
   // Impede acesso a arquivos privados
   if (caminho.split(/[\\/]/).some(parte => parte.startsWith("."))) {
     res.writeHead(403).end("Acesso negado");
+    return;
+  }
+
+  if (caminho === "/api/produtos") {
+    if (req.method !== "GET") {
+      res.setHeader("Allow", "GET");
+      responderJson(res, 405, { erro: "O catálogo está disponível apenas para consulta." });
+      return;
+    }
+
+    const catalogo = await consultarProdutos();
+    if (catalogo.erro) {
+      responderJson(res, catalogo.status, { erro: catalogo.erro });
+    } else {
+      responderJson(res, 200, { produtos: catalogo.produtos });
+    }
     return;
   }
 
@@ -74,10 +130,9 @@ createServer(async (req, res) => {
         return;
       }
 
-      // Informacoes da empresa, produtos e configuracoes
+      // Recebe a pergunta e as configurações. O catálogo vem do Supabase.
       const {
         empresa,
-        produtos,
         pergunta,
         config = {}
       } = dados;
@@ -87,7 +142,6 @@ createServer(async (req, res) => {
         !empresa ||
         typeof empresa.nome !== "string" ||
         !empresa.nome.trim() ||
-        !Array.isArray(produtos) ||
         typeof pergunta !== "string" ||
         !pergunta.trim() ||
         !config ||
@@ -98,21 +152,21 @@ createServer(async (req, res) => {
         return;
       }
 
-      // Envia os dados para o Gemini
+      const catalogo = await consultarProdutos();
+      if (catalogo.erro) {
+        responderJson(res, catalogo.status, { erro: catalogo.erro });
+        return;
+      }
+
+      // Usa os preços do banco, mesmo se o navegador enviar outros produtos.
       const resposta = await responderComGemini(
         empresa,
-        produtos,
+        catalogo.produtos,
         pergunta,
         config
       );
 
-      // Retorna a resposta para o chat
-      res.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store"
-      });
-
-      res.end(JSON.stringify({ resposta }));
+      responderJson(res, 200, { resposta });
 
     } catch (erro) {
       if (erro instanceof SyntaxError) {

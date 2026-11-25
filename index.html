@@ -254,24 +254,26 @@
 
               <!-- Catálogo -->
               <div class="tab-panel" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
-                <p class="panel-hint">Base usada pela IA para consultar itens e informar preços.</p>
+                <p class="panel-hint">Catálogo do Supabase usado pela IA. Cadastro e remoção indisponíveis nesta etapa de leitura.</p>
                 <div class="catalog-form" id="catalogoNovo">
                   <div class="field">
                     <label for="catNome">Produto ou serviço</label>
-                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura">
+                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura" disabled>
                   </div>
                   <div class="field">
                     <label for="catCategoria">Categoria</label>
-                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos">
+                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos" disabled>
                   </div>
                   <div class="field">
                     <label for="catPreco">Preço (R$)</label>
-                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00">
+                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00" disabled>
                   </div>
-                  <button class="btn btn--outline" type="button" data-action="adicionar-item">
+                  <button class="btn btn--outline" type="button" data-action="adicionar-item" disabled>
                     <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
                   </button>
                 </div>
+                <button class="btn btn--outline btn--sm" type="button" id="atualizarCatalogo">Atualizar catálogo</button>
+                <p class="panel-hint" id="estadoCatalogo" role="status"></p>
                 <div class="table-wrap">
                   <table class="table">
                     <thead>
@@ -366,7 +368,7 @@
                   <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-send"/></svg>
                 </button>
               </form>
-              <p class="agent-preview__note">Simulação local com o catálogo atual — a IA real será conectada pelas APIs.</p>
+              <p class="agent-preview__note">A prévia usa o Gemini e o catálogo da empresa.</p>
             </aside>
           </div>
         </section>

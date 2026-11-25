@@ -3,7 +3,6 @@
    Configuração do assistente virtual, catálogo e prévia com o Gemini.
    ========================================================================== */
 
-import { catalogoDemo } from "../dados-demo.js";
 import {
   $, $$, icone, escapar, formatarPreco, toast, horaAtual,
   lerArmazenado, gravarArmazenado, lerFormulario, configurarAbas
@@ -11,25 +10,16 @@ import {
 
 const CHAVE_AGENTE = "cf-agente";
 const CHAVE_CATALOGO = "cf-catalogo";
-let catalogo = lerArmazenado(CHAVE_CATALOGO, catalogoDemo);
+let catalogo = [];
 
 export function iniciarAgente() {
   const form = $("#formAgente");
   configurarAbas(form);
-  renderizarCatalogo();
+  $("#atualizarCatalogo").addEventListener("click", carregarCatalogo);
+  carregarCatalogo();
   configurarContador();
   reiniciarTeste();
   atualizarIndicadoresIA();
-
-  // Catálogo (campos sem <form> próprio para não aninhar formulários)
-  $('[data-action="adicionar-item"]').addEventListener("click", adicionarItem);
-  $("#catalogoNovo").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      adicionarItem();
-    }
-  });
-  $("#tabelaCatalogo").addEventListener("click", removerItem);
 
   // Prévia
   $("#formTeste").addEventListener("submit", (e) => {
@@ -96,11 +86,38 @@ function configurarContador() {
 
 /* ---------- Catálogo ---------- */
 
+// Busca os produtos reais e informa quando a consulta falha.
+async function carregarCatalogo() {
+  const botao = $("#atualizarCatalogo");
+  const estado = $("#estadoCatalogo");
+  botao.disabled = true;
+  estado.textContent = "Carregando catálogo…";
+  $("#tabelaCatalogo").textContent = "";
+  catalogo = [];
+
+  try {
+    const resposta = await fetch("/api/produtos");
+    const dados = await resposta.json();
+    if (!resposta.ok || !Array.isArray(dados.produtos)) {
+      estado.textContent = dados.erro || "Não foi possível carregar o catálogo do Supabase.";
+      return;
+    }
+
+    catalogo = dados.produtos;
+    renderizarCatalogo();
+    estado.textContent = "";
+  } catch {
+    estado.textContent = "Não foi possível carregar o catálogo do Supabase. Tente novamente.";
+  } finally {
+    botao.disabled = false;
+  }
+}
+
 function renderizarCatalogo() {
   const corpo = $("#tabelaCatalogo");
   if (!catalogo.length) {
     corpo.innerHTML = `<tr><td colspan="4"><div class="empty-state">${icone("i-package")}
-      <strong>Catálogo vazio</strong><span>Adicione produtos ou serviços para a IA consultar.</span></div></td></tr>`;
+      <strong>Catálogo vazio</strong><span>A empresa ainda não tem produtos cadastrados.</span></div></td></tr>`;
     return;
   }
   corpo.innerHTML = catalogo
@@ -109,11 +126,12 @@ function renderizarCatalogo() {
         <td><strong>${escapar(item.nome)}</strong></td>
         <td>${escapar(item.categoria || "—")}</td>
         <td class="num">${formatarPreco(item.preco)}</td>
-        <td><button class="icon-btn icon-btn--danger" type="button" data-remover="${item.id}" aria-label="Remover ${escapar(item.nome)}">${icone("i-trash")}</button></td>
+        <td><button class="icon-btn icon-btn--danger" type="button" data-remover="${escapar(item.id)}" aria-label="Remover ${escapar(item.nome)}" disabled>${icone("i-trash")}</button></td>
       </tr>`)
     .join("");
 }
 
+// Guarda a lógica anterior para a próxima etapa. Os botões estão desativados.
 function salvarCatalogo() {
   gravarArmazenado(CHAVE_CATALOGO, catalogo);
   renderizarCatalogo();
@@ -178,7 +196,7 @@ function reiniciarTeste() {
 }
 
 
-// Consulta o Gemini pelo servidor, usando os dados do Agente de IA.
+// Envia a pergunta e a configuração. O servidor busca o catálogo atualizado.
 export async function consultarGemini(pergunta, signal) {
   const dadosEmpresa = lerArmazenado("cf-empresa") || {};
   const empresa = {
@@ -193,16 +211,17 @@ export async function consultarGemini(pergunta, signal) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       empresa,
-      produtos: catalogo,
       pergunta,
       config: lerFormulario($("#formAgente"))
     }),
     signal
+  }).catch(() => {
+    throw new Error("Não foi possível conectar ao servidor da IA.");
   });
 
-  if (!resposta.ok) throw new Error("Erro ao consultar a IA.");
-  const dados = await resposta.json();
-  if (typeof dados.resposta !== "string" || !dados.resposta.trim()) {
+  const dados = await resposta.json().catch(() => null);
+  if (!resposta.ok) throw new Error(dados?.erro || "Não foi possível consultar o Gemini. Tente novamente.");
+  if (typeof dados?.resposta !== "string" || !dados.resposta.trim()) {
     throw new Error("A IA não retornou uma resposta.");
   }
   return dados.resposta;
@@ -226,11 +245,8 @@ async function perguntar(texto) {
   try {
     const resposta = await consultarGemini(pergunta);
     adicionarMensagemTeste("ia", resposta);
-  } catch {
-    adicionarMensagemTeste(
-      "sistema",
-      "Não foi possível consultar a IA. Tente novamente."
-    );
+  } catch (erro) {
+    adicionarMensagemTeste("sistema", erro.message);
   } finally {
     digitando.remove();
   }
