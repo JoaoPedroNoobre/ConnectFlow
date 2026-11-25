@@ -1,0 +1,1246 @@
+/* ==========================================================================
+   comum.css — estilos usados em TODAS as telas
+   Contém: configurações básicas da página, peças reutilizáveis (cartões,
+   botões, campos de formulário, mensagens, avisos), o menu lateral e o
+   cabeçalho do topo. Este arquivo é ligado antes do CSS de cada tela.
+
+   Cores mais usadas no projeto (para consulta):
+   #0b0b18 fundo da página        #13132a fundo dos cartões
+   #0f0f22 fundo dos campos       #25254a bordas
+   #f1f0fb texto principal        #8d8bb0 texto apagado (cinza)
+   #7c3aed roxo principal         #22c55e verde
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   1. CONFIGURAÇÕES BÁSICAS DA PÁGINA
+   -------------------------------------------------------------------------- */
+
+/* Faz os controles do navegador (barras de rolagem, listas) usarem o tema escuro */
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%; /* impede o celular de aumentar o texto sozinho */
+}
+
+/* Todos os elementos: o tamanho inclui borda e espaçamento interno */
+* {
+  box-sizing: border-box; /* largura = conteúdo + padding + borda (aula de box model) */
+  margin: 0;
+}
+
+/* Corpo da página: fonte, cor do texto e fundo escuro com brilhos roxos */
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #f1f0fb;
+  background-color: #0b0b18;
+  background-image:
+    radial-gradient(1200px 600px at 85% -10%, rgba(124, 58, 237, 0.12), transparent 60%),
+    radial-gradient(800px 500px at 10% 110%, rgba(124, 58, 237, 0.08), transparent 60%); /* dois brilhos roxos suaves */
+  background-attachment: fixed; /* o fundo fica parado quando a página rola */
+  -webkit-font-smoothing: antialiased; /* deixa a letra mais lisa */
+}
+
+/* Imagens e ícones não passam da largura de quem os contém */
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Campos e botões usam a mesma fonte e cor do resto da página */
+input,
+button,
+textarea,
+select {
+  font-family: inherit; /* inherit = herda do elemento pai */
+  font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+/* Botões sem o visual padrão do navegador */
+button {
+  cursor: pointer;
+  background-color: transparent;
+  border: 0;
+}
+
+/* Botão desativado mostra o cursor de "proibido" */
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Links sem sublinhado e com a cor do texto ao redor */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Listas sem bolinhas e sem recuo */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+/* Grupos de campos sem a borda padrão */
+fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+/* Tabelas com bordas coladas e largura total */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Elementos com o atributo hidden ficam escondidos (o JavaScript usa isso para trocar de tela) */
+[hidden] {
+  display: none !important; /* !important = vence qualquer outra regra */
+}
+
+/* Contorno roxo quando o elemento é focado pelo teclado (tecla Tab) */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.45);
+}
+
+/* Cor do texto quando selecionado com o mouse */
+::selection {
+  background-color: #7c3aed;
+  color: #fff;
+}
+
+/* Barras de rolagem finas e escuras */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #34345f transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #34345f;
+  border-radius: 8px;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. PEÇAS DE APOIO
+   -------------------------------------------------------------------------- */
+
+/* Ícones (desenhos em SVG): tamanho padrão e traço na cor do texto */
+.icone {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0; /* não encolhe dentro de uma linha flex */
+  fill: none;
+  stroke: currentColor; /* o traço usa a mesma cor do texto */
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Texto escondido da tela, mas lido por leitores de tela (acessibilidade) */
+.texto-leitor-tela {
+  position: absolute; /* tira o texto do fluxo da página */
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0); /* recorta o elemento até ele sumir */
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Link "Pular para o conteúdo": fica fora da tela e aparece ao apertar Tab */
+.link-pular-conteudo {
+  position: absolute;
+  left: 16px;
+  top: -100px; /* começa escondido acima da tela */
+  z-index: 100; /* fica por cima de tudo */
+  background-color: #7c3aed;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+}
+
+.link-pular-conteudo:focus {
+  top: 16px;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. PEÇAS REUTILIZÁVEIS (aparecem em várias telas)
+   -------------------------------------------------------------------------- */
+
+/* Cartão: caixa escura com borda e cantos arredondados que envolve cada bloco */
+.cartao {
+  background-image: linear-gradient(180deg, #13132a, rgba(19, 19, 42, 0.85)); /* degradê bem leve de cima para baixo */
+  border: 1px solid #25254a;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Topo do cartão: título de um lado e botão/link do outro */
+.cartao-topo {
+  display: flex; /* coloca os itens lado a lado */
+  align-items: center;
+  justify-content: space-between; /* empurra um item para cada ponta */
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cartao-topo .cartao-titulo {
+  margin-bottom: 0;
+}
+
+/* Título dentro do cartão */
+.cartao-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+/* Título de uma seção dentro de um painel */
+.titulo-secao {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 12px;
+}
+
+/* Título de seção que não é o primeiro: ganha mais espaço em cima */
+.titulo-secao-espacado {
+  margin-top: 24px;
+}
+
+/* Texto de explicação em cinza */
+.texto-dica {
+  color: #8d8bb0;
+  margin-bottom: 16px;
+}
+
+/* Botão: estilo básico de todos os botões */
+.botao {
+  display: inline-flex; /* ícone e texto lado a lado dentro do botão */
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap; /* o texto do botão não quebra linha */
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease; /* muda suavemente ao passar o mouse */
+}
+
+/* Ao clicar, o botão desce 1px (efeito de apertar), se não estiver desativado */
+.botao:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Botão desativado fica meio transparente */
+.botao:disabled {
+  opacity: 0.45;
+}
+
+.botao .icone {
+  width: 18px;
+  height: 18px;
+}
+
+/* Botão menor (usado no topo das telas e nas conversas) */
+.botao-pequeno {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.botao-pequeno .icone {
+  width: 16px;
+  height: 16px;
+}
+
+/* Botão quadrado só com ícone (ex.: enviar mensagem) */
+.botao-so-icone {
+  width: 40px;
+  padding: 0;
+}
+
+/* Botão que ocupa toda a largura disponível */
+.botao-largura-total {
+  width: 100%;
+}
+
+/* Botão roxo principal (ação mais importante da tela) */
+.botao-roxo {
+  background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45); /* brilho roxo em volta */
+}
+
+.botao-roxo:hover:not(:disabled) {
+  box-shadow: 0 8px 26px rgba(124, 58, 237, 0.45);
+  filter: brightness(1.08); /* clareia um pouco */
+}
+
+/* Botão com contorno (ação secundária) */
+.botao-contorno {
+  background-color: #1a1a35;
+  border-color: #34345f;
+  color: #c9c8e0;
+}
+
+.botao-contorno:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  color: #f1f0fb;
+}
+
+/* Botão transparente (ex.: "Cancelar") */
+.botao-transparente {
+  color: #c9c8e0;
+}
+
+.botao-transparente:hover {
+  background-color: #1a1a35;
+}
+
+/* Botão verde (ex.: "Salvar alterações") */
+.botao-verde {
+  background-color: #22c55e;
+  color: #052e13;
+}
+
+.botao-verde:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* Botão vermelho claro (ex.: "Remover") */
+.botao-remover {
+  background-color: rgba(244, 63, 94, 0.14);
+  color: #f43f5e;
+}
+
+.botao-remover:hover {
+  background-color: rgba(244, 63, 94, 0.22);
+}
+
+/* Botão verde do WhatsApp */
+.botao-whatsapp {
+  background-color: #25d366;
+  color: #052e13;
+}
+
+.botao-whatsapp:hover {
+  filter: brightness(1.05);
+}
+
+/* Botão de ícone: quadrado pequeno, sem fundo, só com o desenho */
+.botao-icone {
+  display: inline-grid; /* grid usado só para centralizar o ícone */
+  align-items: center;
+  justify-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #8d8bb0;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.botao-icone:hover {
+  background-color: #1a1a35;
+  color: #f1f0fb;
+}
+
+.botao-icone .icone {
+  width: 18px;
+  height: 18px;
+}
+
+/* Botão de ícone roxo (ex.: "+" de novo atendimento) */
+.botao-icone-roxo {
+  background-color: rgba(139, 92, 246, 0.14);
+  color: #a78bfa;
+}
+
+.botao-icone-roxo:hover {
+  background-color: #7c3aed;
+  color: #fff;
+}
+
+/* Botão de ícone vermelho (ex.: lixeira) */
+.botao-icone-excluir {
+  color: #f43f5e;
+}
+
+.botao-icone-excluir:hover {
+  background-color: rgba(244, 63, 94, 0.14);
+  color: #f43f5e;
+}
+
+/* Avatar: círculo com as iniciais do cliente */
+.avatar {
+  display: inline-grid; /* grid usado só para centralizar as letras */
+  align-items: center;
+  justify-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* 50% deixa o quadrado redondo */
+  background-image: linear-gradient(135deg, #a78bfa, #6d28d9);
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.avatar-pequeno {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+}
+
+.avatar-grande {
+  width: 64px;
+  height: 64px;
+  font-size: 18px;
+}
+
+/* Cores dos avatares (o JavaScript escolhe uma de 1 a 5 pelo nome do cliente) */
+.avatar-cor-1 {
+  background-image: linear-gradient(135deg, #f472b6, #db2777);
+}
+
+.avatar-cor-2 {
+  background-image: linear-gradient(135deg, #38bdf8, #2563eb);
+}
+
+.avatar-cor-3 {
+  background-image: linear-gradient(135deg, #fbbf24, #ea580c);
+}
+
+.avatar-cor-4 {
+  background-image: linear-gradient(135deg, #34d399, #059669);
+}
+
+.avatar-cor-5 {
+  background-image: linear-gradient(135deg, #a78bfa, #7c3aed);
+}
+
+/* Etiqueta de status do atendimento (ex.: "IA atendendo"), com uma bolinha antes do texto */
+.etiqueta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px; /* valor grande = formato de pílula */
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Bolinha colorida dentro da etiqueta (usa a cor do texto) */
+.bolinha-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor; /* mesma cor do texto da etiqueta */
+  flex-shrink: 0;
+}
+
+/* Uma cor para cada status (os nomes vêm de js/atendimentos.js) */
+.etiqueta-em_atendimento {
+  background-color: rgba(139, 92, 246, 0.14);
+  color: #c4b5fd;
+}
+
+.etiqueta-aguardando_humano {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+}
+
+.etiqueta-assumido {
+  background-color: rgba(96, 165, 250, 0.14);
+  color: #60a5fa;
+}
+
+.etiqueta-resolvido {
+  background-color: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+}
+
+/* Abas (ex.: Geral / Catálogo / Respostas): barra com botões lado a lado */
+.abas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  width: max-content; /* a barra tem só o tamanho dos botões */
+  max-width: 100%;
+  background-color: #0f0f22;
+  border: 1px solid #25254a;
+  border-radius: 8px;
+  overflow-x: auto; /* se não couber, rola para o lado */
+  scrollbar-width: none; /* esconde a barra de rolagem */
+}
+
+/* Cada botão de aba */
+.aba {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8d8bb0;
+  white-space: nowrap;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.aba:hover {
+  color: #f1f0fb;
+}
+
+/* Aba selecionada (o JavaScript coloca a classe "ativo") */
+.aba.ativo {
+  background-color: #7c3aed;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.45);
+}
+
+/* Conteúdo de cada aba aparece com um leve efeito */
+.painel-aba {
+  animation: aparecer 200ms ease;
+}
+
+/* Campo de formulário: rótulo em cima e campo embaixo */
+.campo {
+  display: grid; /* empilha rótulo e campo */
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+/* Rótulo (texto acima do campo) */
+.campo label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9c8e0;
+}
+
+/* Caixas de texto, listas de opção e áreas de texto */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #25254a;
+  border-radius: 8px;
+  background-color: #0f0f22;
+  color: #f1f0fb;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Texto de exemplo dentro dos campos vazios */
+input::placeholder,
+textarea::placeholder {
+  color: #5f5d85;
+}
+
+/* Lista de opções (select) com uma setinha desenhada à direita */
+select {
+  appearance: none; /* tira a seta padrão do navegador */
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238d8bb0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); /* desenho da setinha */
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+select option {
+  background-color: #13132a;
+}
+
+/* Área de texto maior: só cresce para baixo */
+textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+/* Campo em uso: borda roxa e brilho */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.45);
+}
+
+/* Campo com erro (o JavaScript marca aria-invalid="true"): borda vermelha */
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #f43f5e;
+}
+
+/* Interruptor liga/desliga da IA (no topo das telas WhatsApp e Agente de IA) */
+.interruptor {
+  position: relative; /* referência para posicionar o trilho e a caixa de seleção */
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* A caixa de seleção de verdade fica invisível por cima, recebendo o clique */
+.interruptor input {
+  position: absolute; /* ocupa o interruptor inteiro */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0; /* invisível, mas ainda clicável */
+  cursor: pointer;
+  z-index: 1; /* fica acima do trilho para receber o clique */
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Trilho: a pílula cinza do fundo */
+.interruptor-trilho {
+  position: absolute; /* cobre o interruptor inteiro */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+  background-color: #34345f;
+  transition: background 160ms ease;
+}
+
+/* Bolinha branca que anda para o lado */
+.interruptor-bolinha {
+  position: absolute; /* posição exata dentro do trilho */
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #fff;
+  transition: transform 160ms ease;
+}
+
+/* Ligado (caixa marcada): o trilho fica verde... */
+.interruptor input:checked + .interruptor-trilho {
+  background-color: #22c55e;
+}
+
+/* ...e a bolinha anda 14px para a direita */
+.interruptor input:checked + .interruptor-trilho .interruptor-bolinha {
+  transform: translateX(14px); /* move para o lado sem mexer no resto */
+}
+
+/* Contorno quando o interruptor é focado pelo teclado */
+.interruptor input:focus-visible + .interruptor-trilho {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.45);
+}
+
+/* Mensagem de "nada por aqui" (lista vazia, nenhuma conversa selecionada...) */
+.estado-vazio {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #8d8bb0;
+  height: 100%;
+  align-content: center; /* centraliza o bloco na vertical */
+}
+
+.estado-vazio .icone {
+  width: 40px;
+  height: 40px;
+  color: #34345f;
+}
+
+.estado-vazio strong {
+  color: #c9c8e0;
+  font-size: 16px;
+}
+
+/* Área das mensagens (conversa do WhatsApp e prévia do agente), com pontinhos no fundo */
+.area-mensagens {
+  flex: 1; /* ocupa toda a altura que sobrar */
+  overflow-y: auto; /* rola quando há muitas mensagens */
+  display: flex;
+  flex-direction: column; /* uma mensagem embaixo da outra */
+  gap: 8px;
+  padding: 20px;
+  background-color: #0f0f22;
+  background-image: radial-gradient(rgba(139, 92, 246, 0.06) 1px, transparent 1px); /* pontinho roxo */
+  background-position: 0 0;
+  background-size: 18px 18px; /* um pontinho a cada 18px */
+}
+
+/* Balão de mensagem do cliente (à esquerda, cinza) */
+.mensagem {
+  max-width: min(78%, 520px); /* no máximo 78% da largura, sem passar de 520px */
+  padding: 8px 12px 6px;
+  border-radius: 14px 14px 14px 4px; /* canto de baixo à esquerda mais reto */
+  background-color: #22224a;
+  color: #f1f0fb;
+  align-self: flex-start; /* encosta à esquerda */
+  overflow-wrap: anywhere; /* quebra palavras muito longas */
+}
+
+/* Balão da IA (à direita, roxo) */
+.mensagem-ia {
+  align-self: flex-end; /* encosta à direita */
+  border-radius: 14px 14px 4px 14px;
+  background-color: transparent;
+  background-image: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.3);
+}
+
+/* Balão do atendente humano (à direita, verde escuro) */
+.mensagem-atendente {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background-color: #134e3a;
+  color: #ecfdf5;
+}
+
+/* Texto do balão respeita as quebras de linha */
+.mensagem p {
+  white-space: pre-line;
+}
+
+/* Nome de quem escreveu (ex.: "Assistente · IA") */
+.mensagem-autor {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 2px;
+}
+
+.mensagem-autor .icone {
+  width: 12px;
+  height: 12px;
+}
+
+/* Horário no canto do balão */
+.mensagem time {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+
+/* Aviso no meio da conversa (ex.: "Atendimento assumido por você") */
+.mensagem-sistema {
+  align-self: center; /* fica no centro */
+  font-size: 11px;
+  color: #8d8bb0;
+  text-align: center;
+  background-color: #13132a;
+  border: 1px solid #25254a;
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+/* Barra de digitar mensagem, embaixo da conversa */
+.caixa-digitar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid #25254a;
+  background-color: #13132a;
+}
+
+.caixa-digitar input {
+  flex: 1; /* o campo ocupa o espaço que sobra ao lado do botão */
+  min-height: 40px;
+}
+
+.caixa-digitar .botao-so-icone {
+  flex-shrink: 0;
+}
+
+/* Avisos rápidos no canto da tela (ex.: "Alterações salvas.") */
+.area-avisos {
+  position: fixed; /* fica parado no canto, mesmo rolando a página */
+  right: 20px;
+  bottom: 20px;
+  z-index: 60; /* fica por cima de tudo */
+  display: grid;
+  gap: 8px;
+}
+
+/* Cada aviso */
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 260px;
+  max-width: 380px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: #22224a;
+  border: 1px solid #34345f;
+  color: #f1f0fb;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  animation: aviso-entrar 220ms ease; /* sobe suavemente ao aparecer */
+}
+
+.aviso .icone {
+  color: #22c55e;
+}
+
+/* Aviso de erro: ícone vermelho */
+.aviso-erro .icone {
+  color: #f43f5e;
+}
+
+/* Aviso indo embora: desce e some */
+.saindo {
+  animation: aviso-sair 200ms ease forwards; /* forwards = termina invisível */
+}
+
+
+/* --------------------------------------------------------------------------
+   4. ESTRUTURA DA PÁGINA (de cima para baixo / da esquerda para a direita)
+   -------------------------------------------------------------------------- */
+
+/* Página inteira: menu lateral à esquerda e área principal à direita */
+.aplicacao {
+  display: flex; /* menu e conteúdo lado a lado */
+  min-height: 100vh; /* pelo menos a altura da tela */
+}
+
+/* Menu lateral escuro à esquerda */
+.menu-lateral {
+  position: sticky; /* fica preso no lugar quando a página rola */
+  top: 0;
+  width: 240px;
+  height: 100vh; /* altura da tela inteira */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column; /* logo, links e cartão um embaixo do outro */
+  gap: 24px;
+  background-color: #0e0e1d;
+  border-right: 1px solid #25254a;
+  padding: 20px 12px;
+  z-index: 40; /* fica acima do conteúdo */
+}
+
+/* Logo e nome "ConnectFlow" no topo do menu */
+.menu-marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* A palavra "Flow" em roxo */
+.menu-marca strong {
+  color: #a78bfa;
+}
+
+/* Botão X de fechar o menu: só aparece no celular/tablet */
+.botao-fechar-menu {
+  display: none;
+  margin-left: auto; /* empurra o botão para a direita */
+}
+
+/* Lista de links do menu */
+.menu-navegacao ul {
+  display: grid; /* um link embaixo do outro */
+  gap: 4px;
+}
+
+/* Cada link do menu (Dashboard, WhatsApp...) */
+.link-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10.4px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  color: #c9c8e0;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.link-menu .icone {
+  width: 18px;
+  height: 18px;
+}
+
+.link-menu:hover {
+  background-color: #1a1a35;
+  color: #f1f0fb;
+}
+
+/* Link da tela aberta agora: fundo roxo (o JavaScript coloca a classe "ativo") */
+.link-menu.ativo {
+  background-image: linear-gradient(90deg, #7c3aed, #6d28d9);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.45);
+}
+
+/* Número laranja ao lado de "WhatsApp" (clientes aguardando atendente) */
+.contador-menu {
+  margin-left: auto; /* empurra o número para a direita */
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: #f59e0b;
+  color: #1b1300;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 18px;
+}
+
+/* Cartão da empresa no rodapé do menu */
+.cartao-empresa {
+  margin-top: auto; /* empurra o cartão para o fim do menu */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #13132a;
+  border: 1px solid #25254a;
+  transition: border-color 160ms ease;
+}
+
+.cartao-empresa:hover {
+  border-color: #8b5cf6;
+}
+
+/* Setinha ">" no fim do cartão da empresa */
+.cartao-empresa-seta {
+  width: 16px;
+  height: 16px;
+  color: #8d8bb0;
+}
+
+/* Quadrado roxo com a inicial ou a logo da empresa */
+.cartao-empresa-logo {
+  display: grid; /* grid usado só para centralizar a letra */
+  align-items: center;
+  justify-items: center;
+  flex-shrink: 0;
+  overflow: hidden; /* corta a imagem nos cantos arredondados */
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background-image: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  font-weight: 700;
+}
+
+.cartao-empresa-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* a imagem preenche o quadrado sem distorcer */
+}
+
+/* Nome da empresa e o texto embaixo */
+.cartao-empresa-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cartao-empresa-info strong {
+  display: block;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* nome grande demais termina com "..." */
+}
+
+.cartao-empresa-info small {
+  color: #8d8bb0;
+  font-size: 11px;
+}
+
+/* Fundo escuro atrás do menu quando ele abre no celular */
+.fundo-escuro {
+  position: fixed; /* cobre a tela inteira */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(3, 3, 10, 0.65);
+  backdrop-filter: blur(2px); /* desfoca o que está atrás */
+  z-index: 30; /* abaixo do menu (40) e acima do conteúdo */
+}
+
+/* Área principal: tudo que fica à direita do menu */
+.area-principal {
+  flex: 1; /* ocupa toda a largura que sobra */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: clip; /* corta o que passar da largura, sem criar rolagem para o lado */
+}
+
+/* Conteúdo da tela aberta */
+.conteudo {
+  flex: 1;
+  padding: 0 24px 24px;
+  max-width: 1480px;
+  width: 100%;
+  margin: 0 auto; /* centraliza em telas muito largas */
+}
+
+.conteudo:focus {
+  outline: none;
+}
+
+/* Cada tela aparece com um leve efeito ao ser aberta */
+.tela {
+  animation: aparecer 220ms ease;
+}
+
+/* Cabeçalho do topo: título da tela e botões de ação */
+.cabecalho {
+  position: sticky; /* fica preso no topo quando a página rola */
+  top: 0;
+  z-index: 20; /* fica acima do conteúdo que passa por baixo */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 76px;
+  padding: 12px 24px;
+  background-color: rgba(11, 11, 24, 0.8); /* fundo um pouco transparente */
+  backdrop-filter: blur(12px); /* desfoca o conteúdo que passa por baixo */
+  max-width: 1480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Botão de abrir o menu (três tracinhos): só aparece no celular/tablet */
+.botao-abrir-menu {
+  display: none;
+}
+
+/* Título e subtítulo da tela */
+.cabecalho-titulo {
+  flex: 1; /* ocupa o espaço e empurra os botões para a direita */
+  min-width: 0;
+}
+
+.cabecalho-titulo h1 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.cabecalho-titulo p {
+  color: #8d8bb0;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botões do lado direito do cabeçalho */
+.cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grupo de botões de cada tela (só o grupo da tela aberta aparece) */
+.grupo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botão verde "IA Ativa" com o interruptor (telas WhatsApp e Agente de IA) */
+.botao-ia-ativa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background-color: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* IA pausada: o botão fica cinza (o JavaScript coloca a classe "desligado") */
+.botao-ia-ativa.desligado {
+  background-color: #13132a;
+  border-color: #25254a;
+  color: #8d8bb0;
+}
+
+
+/* --------------------------------------------------------------------------
+   5. ANIMAÇÕES
+   -------------------------------------------------------------------------- */
+
+/* Aparecer: começa transparente e 4px abaixo, termina no lugar */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Aviso entrando: sobe 8px e aparece */
+@keyframes aviso-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Aviso saindo: desce 8px e some */
+@keyframes aviso-sair {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+
+/* --------------------------------------------------------------------------
+   6. TELAS MENORES (@media = regras que só valem até certa largura de tela)
+   -------------------------------------------------------------------------- */
+
+/* Tablet (até 1024px): o menu lateral vira uma gaveta escondida */
+@media (max-width: 1024px) {
+  .menu-lateral {
+    position: fixed; /* fica por cima do conteúdo */
+    left: 0;
+    top: 0;
+    transform: translateX(-100%); /* empurrado para fora da tela, à esquerda */
+    transition: transform 240ms ease;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Menu aberto (o JavaScript coloca a classe "aberto"): volta para a tela */
+  .menu-lateral.aberto {
+    transform: none;
+  }
+
+  .botao-fechar-menu {
+    display: inline-grid;
+  }
+
+  .botao-abrir-menu {
+    display: inline-grid;
+  }
+
+  .cabecalho {
+    padding: 12px 16px;
+  }
+
+  .conteudo {
+    padding: 0 16px 16px;
+  }
+}
+
+/* Celular (até 768px) */
+@media (max-width: 768px) {
+  .cabecalho {
+    min-height: 64px;
+  }
+
+  .cabecalho-titulo h1 {
+    font-size: 18px;
+  }
+
+  /* Esconde o subtítulo para sobrar espaço */
+  .cabecalho-titulo p {
+    display: none;
+  }
+
+  /* Botões do topo mostram só o ícone */
+  .cabecalho-acoes .botao span {
+    display: none;
+  }
+
+  .botao-ia-ativa .texto-ia {
+    display: none;
+  }
+
+  .cabecalho-acoes .botao-pequeno {
+    width: 36px;
+    padding: 0;
+  }
+
+  /* Abas ocupam a largura toda */
+  .abas {
+    width: 100%;
+  }
+
+  .cartao {
+    padding: 16px;
+  }
+
+  .mensagem {
+    max-width: 88%;
+  }
+
+  /* Avisos ocupam a largura da tela */
+  .area-avisos {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .aviso {
+    max-width: none;
+  }
+}
+
+/* Quem pediu ao sistema para reduzir animações: elas ficam instantâneas */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

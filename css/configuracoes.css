@@ -1,0 +1,245 @@
+/* ==========================================================================
+   configuracoes.css — tela 4: CONFIGURAÇÕES
+   Cartão com três abas: Empresa (dados + logo), Redes sociais (WhatsApp,
+   Instagram, link para a bio) e Integrações (WhatsApp e Inteligência
+   Artificial).
+   Usa também o comum.css (abas, campos, botões).
+   ========================================================================== */
+
+
+/* --- Aba "Empresa" --- */
+
+/* Divisão da aba: campos à esquerda e caixa da logo (240px) à direita */
+.painel-empresa-grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px; /* campos ocupam o resto; logo tem 240px */
+  gap: 24px;
+  align-items: start;
+}
+
+/* Campos do formulário em 2 colunas */
+.grade-formulario {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* Dentro da grade quem dá o espaço é o "gap", então o campo não tem margem */
+.grade-formulario .campo {
+  margin-bottom: 0;
+}
+
+/* Campo que ocupa as duas colunas (ex.: Nome da empresa, Descrição) */
+.campo-largura-total {
+  grid-column: 1 / -1; /* vai da primeira até a última coluna */
+}
+
+/* Caixa "Logo da empresa" */
+.caixa-logo {
+  display: grid;
+  gap: 12px;
+}
+
+.caixa-logo-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c9c8e0;
+}
+
+/* Quadro com a logo e o nome da empresa */
+.caixa-logo-previa {
+  display: grid; /* grid usado só para centralizar */
+  align-items: center;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  aspect-ratio: 1.3; /* a altura acompanha a largura (largura = 1,3 x altura) */
+  border: 1px solid #25254a;
+  border-radius: 12px;
+  background-color: #0f0f22;
+  padding: 16px;
+  text-align: center;
+}
+
+.caixa-logo-previa img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain; /* a logo inteira aparece, sem cortar */
+  border-radius: 8px;
+}
+
+.caixa-logo-previa strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+/* Botões "Alterar imagem" e "Remover", um embaixo do outro */
+.caixa-logo-botoes {
+  display: grid;
+  gap: 8px;
+}
+
+.caixa-logo-botoes label {
+  cursor: pointer;
+}
+
+/* --- Aba "Redes sociais" --- */
+
+/* Campo com ícone dentro (WhatsApp, Instagram, Site) */
+.campo-com-icone {
+  position: relative; /* referência para posicionar o ícone */
+}
+
+.campo-com-icone .icone {
+  position: absolute; /* fica por cima do campo, à esquerda */
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%); /* sobe metade da própria altura: fica centralizado */
+  color: #8d8bb0;
+  width: 18px;
+  height: 18px;
+}
+
+.campo-com-icone input {
+  padding-left: 40px; /* espaço para o ícone */
+}
+
+/* Texto de ajuda embaixo do campo do WhatsApp */
+.campo-dica {
+  color: #8d8bb0;
+  font-size: 12px;
+}
+
+/* Número inválido: texto de ajuda vermelho (o JavaScript coloca a classe "erro") */
+.campo-dica.erro {
+  color: #f43f5e;
+}
+
+/* Caixa tracejada com o link wa.me gerado e o botão "Copiar" */
+.caixa-link-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap; /* em telas estreitas o botão desce */
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #0f0f22;
+  border: 1px dashed #34345f; /* borda tracejada */
+}
+
+/* O link em si, em roxo claro */
+.caixa-link-whatsapp code {
+  display: block;
+  margin-top: 2px;
+  color: #c4b5fd;
+  font-size: 12px;
+  overflow-wrap: anywhere; /* quebra o link comprido em várias linhas */
+}
+
+/* --- Aba "Integrações" --- */
+
+/* Cartões de integração em 2 colunas */
+.grade-integracoes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* Cada cartão: ícone, nome, descrição e, embaixo, o estado e o botão */
+.cartao-integracao {
+  display: grid;
+  gap: 16px;
+  align-content: space-between; /* topo em cima e rodapé embaixo */
+  padding: 16px;
+  border: 1px solid #25254a;
+  border-radius: 12px;
+  background-color: #0f0f22;
+}
+
+/* Ícone colorido ao lado do nome e da descrição */
+.cartao-integracao-topo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.cartao-integracao-topo h3 {
+  font-size: 14px;
+}
+
+.cartao-integracao-topo p {
+  color: #8d8bb0;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Quadrado com o ícone (a cor de fundo vem do JavaScript) */
+.icone-integracao {
+  display: grid; /* grid usado só para centralizar o ícone */
+  align-items: center;
+  justify-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Rodapé: "Conectado/Desconectado" de um lado e botão do outro */
+.cartao-integracao-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Texto do estado, com uma bolinha antes */
+.estado-integracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8d8bb0;
+}
+
+/* Bolinha cinza (desconectado) */
+.bolinha-estado {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #34345f;
+}
+
+/* Conectado: texto verde (o JavaScript coloca a classe "conectado") */
+.estado-integracao.conectado {
+  color: #22c55e;
+}
+
+/* Conectado: bolinha verde com brilho */
+.conectado .bolinha-estado {
+  background-color: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+
+/* --------------------------------------------------------------------------
+   TELAS MENORES
+   -------------------------------------------------------------------------- */
+
+/* Celular (até 768px): tudo em uma coluna */
+@media (max-width: 768px) {
+  .grade-formulario {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .grade-integracoes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .painel-empresa-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -9,34 +9,32 @@ import { $, $$, toast, iniciais, lerArmazenado, gravarArmazenado, lerFormulario,
 import { iniciarDashboard } from "./telas/dashboard.js";
 import { iniciarWhatsApp, abrirConversa } from "./telas/whatsapp-tela.js";
 import { iniciarAgente } from "./telas/agente.js";
-import { iniciarInstagram } from "./telas/instagram.js";
 import { iniciarConfiguracoes } from "./telas/configuracoes.js";
 
-/* As 5 telas principais definidas no README do projeto */
+/* As 4 telas da interface (o Instagram Studio foi retirado) */
 const TELAS = {
   dashboard: { titulo: "Dashboard", subtitulo: "Visão geral do seu atendimento e marketing" },
   whatsapp: { titulo: "WhatsApp", subtitulo: "Atendimentos e conversas em tempo real" },
   agente: { titulo: "Agente de IA", subtitulo: "Configure o comportamento do seu assistente virtual" },
-  instagram: { titulo: "Instagram Studio", subtitulo: "Crie, edite e programe suas publicações" },
   configuracoes: { titulo: "Configurações", subtitulo: "Gerencie sua empresa, redes sociais e integrações" }
 };
 
 /* ---------- Menu lateral (gaveta em telas menores) ---------- */
 
 const sidebar = $("#sidebar");
-const backdrop = $(".backdrop");
+const backdrop = $(".fundo-escuro");
 const botaoMenu = $('[data-action="abrir-menu"]');
 
 function abrirMenu() {
-  sidebar.classList.add("is-open");
+  sidebar.classList.add("aberto");
   backdrop.hidden = false;
   botaoMenu.setAttribute("aria-expanded", "true");
-  $(".nav-link.is-active", sidebar)?.focus();
+  $(".link-menu.ativo", sidebar)?.focus();
 }
 
 function fecharMenu() {
-  if (!sidebar.classList.contains("is-open")) return;
-  sidebar.classList.remove("is-open");
+  if (!sidebar.classList.contains("aberto")) return;
+  sidebar.classList.remove("aberto");
   backdrop.hidden = true;
   botaoMenu.setAttribute("aria-expanded", "false");
 }
@@ -46,7 +44,7 @@ $$('[data-action="fechar-menu"]').forEach((el) => el.addEventListener("click", f
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     fecharMenu();
-    $("#chatLayout").classList.remove("info-aberta");
+    $("#chatLayout").classList.remove("painel-cliente-aberto");
   }
 });
 
@@ -57,11 +55,11 @@ function navegar() {
   const tela = TELAS[nome] ? nome : "dashboard";
   const anterior = document.body.dataset.tela;
 
-  $$(".view").forEach((v) => { v.hidden = v.dataset.view !== tela; });
+  $$(".tela").forEach((v) => { v.hidden = v.dataset.view !== tela; });
   $$("[data-acoes]").forEach((g) => { g.hidden = g.dataset.acoes !== tela; });
-  $$(".nav-link").forEach((link) => {
+  $$(".link-menu").forEach((link) => {
     const ativo = link.dataset.view === tela;
-    link.classList.toggle("is-active", ativo);
+    link.classList.toggle("ativo", ativo);
     if (ativo) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   });
@@ -133,7 +131,6 @@ atualizarCartaoEmpresa();
 iniciarDashboard();
 iniciarWhatsApp();
 iniciarAgente();
-iniciarInstagram();
 iniciarConfiguracoes();
 
 window.addEventListener("hashchange", navegar);

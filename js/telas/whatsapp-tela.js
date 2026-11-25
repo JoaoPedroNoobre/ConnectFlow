@@ -60,14 +60,16 @@ export function iniciarWhatsApp() {
 export function abrirConversa(id) {
   if (id && buscarAtendimento(id)) {
     estado.selecionadoId = id;
-    els.layout.dataset.painel = "chat";
+    els.layout.classList.add("mostrando-conversa");
+    els.layout.classList.remove("mostrando-lista");
   } else {
-    els.layout.dataset.painel = "lista";
+    els.layout.classList.add("mostrando-lista");
+    els.layout.classList.remove("mostrando-conversa");
     if (!estado.selecionadoId && window.matchMedia("(min-width: 769px)").matches) {
       estado.selecionadoId = listarAtendimentos()[0]?.id ?? null;
     }
   }
-  els.layout.classList.remove("info-aberta");
+  els.layout.classList.remove("painel-cliente-aberto");
   renderizarTudo();
 }
 
@@ -90,7 +92,7 @@ function renderizarFiltros() {
   els.filtros.innerHTML = opcoes
     .map(([valor, rotulo, qtd]) => {
       const ativo = estado.filtro === valor;
-      return `<button type="button" class="pill ${ativo ? "is-active" : ""}" data-filtro="${valor}"
+      return `<button type="button" class="filtro ${ativo ? "ativo" : ""}" data-filtro="${valor}"
                 role="tab" aria-selected="${ativo}">${rotulo} (${qtd})</button>`;
     })
     .join("");
@@ -103,7 +105,7 @@ function renderizarLista() {
 
   if (!itens.length) {
     els.lista.innerHTML = `
-      <li class="empty-state">${icone("i-search")}
+      <li class="estado-vazio">${icone("i-search")}
         <strong>Nenhuma conversa</strong><span>Altere o filtro ou a busca.</span></li>`;
     return;
   }
@@ -114,15 +116,15 @@ function renderizarLista() {
       const ativo = a.id === estado.selecionadoId;
       return `
         <li>
-          <button type="button" class="conversation ${ativo ? "is-active" : ""}" data-id="${a.id}"
+          <button type="button" class="item-conversa ${ativo ? "ativo" : ""}" data-id="${a.id}"
                   ${ativo ? 'aria-current="true"' : ""}>
-            <span class="avatar" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
-            <span class="conversation__body">
-              <span class="conversation__row">
+            <span class="avatar avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
+            <span class="item-conversa-texto">
+              <span class="item-conversa-linha">
                 <strong>${escapar(a.cliente)}</strong>
                 <time>${escapar(ultima?.hora ?? "")}</time>
               </span>
-              <span class="conversation__preview">${escapar(ultima?.texto ?? "Novo atendimento")}</span>
+              <span class="item-conversa-previa">${escapar(ultima?.texto ?? "Novo atendimento")}</span>
               ${badgeStatus(a.status)}
             </span>
           </button>
@@ -139,12 +141,12 @@ function nomeAgente() {
 
 function renderizarMensagem(m) {
   if (m.autor === "sistema") {
-    return `<p class="msg-system">${escapar(m.texto)} · ${escapar(m.hora)}</p>`;
+    return `<p class="mensagem-sistema">${escapar(m.texto)} · ${escapar(m.hora)}</p>`;
   }
-  const classes = { cliente: "msg", ia: "msg msg--ia", humano: "msg msg--out" };
+  const classes = { cliente: "mensagem", ia: "mensagem mensagem-ia", humano: "mensagem mensagem-atendente" };
   const autor = {
-    ia: `<span class="msg__author">${icone("i-sparkles")}${escapar(nomeAgente())} · IA</span>`,
-    humano: `<span class="msg__author">${icone("i-user")}Atendente</span>`
+    ia: `<span class="mensagem-autor">${icone("i-sparkles")}${escapar(nomeAgente())} · IA</span>`,
+    humano: `<span class="mensagem-autor">${icone("i-user")}Atendente</span>`
   };
   return `
     <div class="${classes[m.autor]}">
@@ -155,14 +157,14 @@ function renderizarMensagem(m) {
 }
 
 function botoesAcao(status) {
-  const assumir = `<button class="btn btn--primary btn--sm" data-action="assumir" title="Assumir atendimento">${icone("i-user-check")}<span>Assumir</span></button>`;
+  const assumir = `<button class="botao botao-roxo botao-pequeno" data-action="assumir" title="Assumir atendimento">${icone("i-user-check")}<span>Assumir</span></button>`;
   const porStatus = {
     [STATUS.EM_ATENDIMENTO]: assumir,
     [STATUS.AGUARDANDO_HUMANO]: assumir,
     [STATUS.ASSUMIDO]: `
-      <button class="btn btn--secondary btn--sm" data-action="devolver-ia" title="Devolver para a IA">${icone("i-bot")}<span>Devolver à IA</span></button>
-      <button class="btn btn--success btn--sm" data-action="resolver" title="Marcar como resolvido">${icone("i-check")}<span>Resolver</span></button>`,
-    [STATUS.RESOLVIDO]: `<button class="btn btn--secondary btn--sm" data-action="reabrir" title="Reabrir atendimento">${icone("i-message")}<span>Reabrir</span></button>`
+      <button class="botao botao-secundario botao-pequeno" data-action="devolver-ia" title="Devolver para a IA">${icone("i-bot")}<span>Devolver à IA</span></button>
+      <button class="botao botao-verde botao-pequeno" data-action="resolver" title="Marcar como resolvido">${icone("i-check")}<span>Resolver</span></button>`,
+    [STATUS.RESOLVIDO]: `<button class="botao botao-secundario botao-pequeno" data-action="reabrir" title="Reabrir atendimento">${icone("i-message")}<span>Reabrir</span></button>`
   };
   return porStatus[status];
 }
@@ -170,50 +172,50 @@ function botoesAcao(status) {
 function rodape(status) {
   if (status === STATUS.ASSUMIDO) {
     return `
-      <form class="composer" data-form="mensagem">
-        <label class="sr-only" for="campoMensagem">Mensagem</label>
+      <form class="caixa-digitar" data-form="mensagem">
+        <label class="texto-leitor-tela" for="campoMensagem">Mensagem</label>
         <input id="campoMensagem" name="mensagem" type="text" placeholder="Digite sua mensagem…" autocomplete="off" required>
-        <button class="btn btn--primary btn--icon" type="submit" aria-label="Enviar mensagem">${icone("i-send")}</button>
+        <button class="botao botao-roxo botao-so-icone" type="submit" aria-label="Enviar mensagem">${icone("i-send")}</button>
       </form>`;
   }
   const textos = {
     [STATUS.EM_ATENDIMENTO]: [icone("i-sparkles"), "A IA está conduzindo este atendimento.", ""],
-    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", "composer-lock--wait"],
-    [STATUS.RESOLVIDO]: [icone("i-check-circle"), "Este atendimento foi resolvido.", "composer-lock--done"]
+    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", "aviso-aguardando"],
+    [STATUS.RESOLVIDO]: [icone("i-check-circle"), "Este atendimento foi resolvido.", "aviso-resolvido"]
   };
   const [ic, texto, extra] = textos[status];
   const botao = status === STATUS.RESOLVIDO
     ? ""
-    : `<button class="btn btn--primary btn--sm" data-action="assumir">${icone("i-user-check")}Assumir para responder</button>`;
-  return `<div class="composer-lock ${extra}"><span>${ic}${texto}</span>${botao}</div>`;
+    : `<button class="botao botao-roxo botao-pequeno" data-action="assumir">${icone("i-user-check")}Assumir para responder</button>`;
+  return `<div class="aviso-bloqueado ${extra}"><span>${ic}${texto}</span>${botao}</div>`;
 }
 
 function renderizarJanela() {
   const a = buscarAtendimento(estado.selecionadoId);
   if (!a) {
     els.janela.innerHTML = `
-      <div class="empty-state">${icone("i-whatsapp")}
+      <div class="estado-vazio">${icone("i-whatsapp")}
         <strong>Selecione uma conversa</strong>
         <span>As mensagens dos seus clientes aparecem aqui.</span></div>`;
     return;
   }
 
   els.janela.innerHTML = `
-    <header class="chat-window__header">
-      <button class="icon-btn chat-window__back" type="button" data-action="voltar-lista" aria-label="Voltar para a lista">${icone("i-arrow-left")}</button>
-      <span class="avatar" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
-      <div class="chat-window__who">
+    <header class="janela-conversa-topo">
+      <button class="botao-icone botao-voltar-lista" type="button" data-action="voltar-lista" aria-label="Voltar para a lista">${icone("i-arrow-left")}</button>
+      <span class="avatar avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
+      <div class="janela-conversa-cliente">
         <strong>${escapar(a.cliente)}</strong>
         ${badgeStatus(a.status)}
       </div>
-      <div class="chat-window__actions">
+      <div class="janela-conversa-acoes">
         ${botoesAcao(a.status)}
-        ${linkWhatsApp(a.telefone) ? `<a class="icon-btn" href="${linkWhatsApp(a.telefone)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp" title="Abrir no WhatsApp">${icone("i-phone")}</a>` : ""}
-        <button class="icon-btn" type="button" data-action="abrir-info" aria-label="Informações do cliente" title="Informações do cliente">${icone("i-more")}</button>
+        ${linkWhatsApp(a.telefone) ? `<a class="botao-icone" href="${linkWhatsApp(a.telefone)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp" title="Abrir no WhatsApp">${icone("i-phone")}</a>` : ""}
+        <button class="botao-icone" type="button" data-action="abrir-info" aria-label="Informações do cliente" title="Informações do cliente">${icone("i-more")}</button>
       </div>
     </header>
-    <div class="messages" id="listaMensagens">
-      ${a.mensagens.length ? a.mensagens.map(renderizarMensagem).join("") : '<p class="msg-system">Nenhuma mensagem ainda</p>'}
+    <div class="area-mensagens" id="listaMensagens">
+      ${a.mensagens.length ? a.mensagens.map(renderizarMensagem).join("") : '<p class="mensagem-sistema">Nenhuma mensagem ainda</p>'}
     </div>
     ${rodape(a.status)}`;
 
@@ -233,26 +235,26 @@ function linkWhatsApp(telefone) {
 function renderizarInfo() {
   const a = buscarAtendimento(estado.selecionadoId);
   if (!a) {
-    els.info.innerHTML = `<div class="empty-state">${icone("i-user")}<span>Nenhum cliente selecionado</span></div>`;
+    els.info.innerHTML = `<div class="estado-vazio">${icone("i-user")}<span>Nenhum cliente selecionado</span></div>`;
     return;
   }
 
   const link = linkWhatsApp(a.telefone);
 
   els.info.innerHTML = `
-    <div class="chat-info__head">
-      <button class="icon-btn chat-info__close" type="button" data-action="fechar-info" aria-label="Fechar">${icone("i-x")}</button>
-      <span class="avatar avatar--lg" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
+    <div class="painel-cliente-topo">
+      <button class="botao-icone botao-fechar-painel" type="button" data-action="fechar-info" aria-label="Fechar">${icone("i-x")}</button>
+      <span class="avatar avatar-grande avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
       <strong>${escapar(a.cliente)}</strong>
       ${badgeStatus(a.status)}
     </div>
-    <dl class="info-list">
+    <dl class="lista-dados-cliente">
       <div><dt>Telefone</dt><dd>${escapar(formatarTelefone(a.telefone))}</dd></div>
       <div><dt>Origem do contato</dt><dd>${escapar(a.origem)}</dd></div>
       <div><dt>Interesse</dt><dd>${escapar(a.interesse)}</dd></div>
       <div><dt>Protocolo</dt><dd>#${escapar(a.id)}</dd></div>
     </dl>
-    ${link ? `<a class="btn btn--whatsapp btn--block" href="${link}" target="_blank" rel="noopener noreferrer">${icone("i-external")}Abrir no WhatsApp</a>` : ""}`;
+    ${link ? `<a class="botao botao-whatsapp botao-largura-total" href="${link}" target="_blank" rel="noopener noreferrer">${icone("i-external")}Abrir no WhatsApp</a>` : ""}`;
 }
 
 function atualizarBadgeMenu() {
@@ -292,10 +294,10 @@ function tratarAcao(e) {
       location.hash = "whatsapp";
       break;
     case "abrir-info":
-      els.layout.classList.add("info-aberta");
+      els.layout.classList.add("painel-cliente-aberto");
       break;
     case "fechar-info":
-      els.layout.classList.remove("info-aberta");
+      els.layout.classList.remove("painel-cliente-aberto");
       break;
     case "novo-atendimento":
       abrirModal();

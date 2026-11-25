@@ -20,7 +20,7 @@ export const $$ = (seletor, raiz = document) => [...raiz.querySelectorAll(seleto
 
 /* Markup de um ícone do sprite */
 export function icone(nome, classe = "") {
-  return `<svg class="icon ${classe}" aria-hidden="true"><use href="${SPRITE}#${nome}"/></svg>`;
+  return `<svg class="icone ${classe}" aria-hidden="true"><use href="${SPRITE}#${nome}"/></svg>`;
 }
 
 /* Evita injeção de HTML ao inserir textos digitados pelo usuário */
@@ -41,7 +41,7 @@ export const ROTULO_FILTRO = Object.freeze({
   [STATUS.RESOLVIDO]: "Resolvidos"
 });
 
-/* Cor de avatar estável a partir do nome (1 a 5, ver .avatar[data-cor]) */
+/* Cor de avatar estável a partir do nome (1 a 5, ver .avatar-cor-1 até .avatar-cor-5) */
 export function corAvatar(nome) {
   let soma = 0;
   for (const letra of String(nome)) soma += letra.charCodeAt(0);
@@ -54,7 +54,7 @@ export function configurarAbas(container) {
   const ativar = (aba, focar = true) => {
     abas.forEach((a) => {
       const ativa = a === aba;
-      a.classList.toggle("is-active", ativa);
+      a.classList.toggle("ativo", ativa);
       a.setAttribute("aria-selected", String(ativa));
       a.tabIndex = ativa ? 0 : -1;
       document.getElementById(a.getAttribute("aria-controls")).hidden = !ativa;
@@ -72,7 +72,7 @@ export function configurarAbas(container) {
 }
 
 export function badgeStatus(status) {
-  return `<span class="badge badge--${status}">${ROTULO_STATUS[status] ?? status}</span>`;
+  return `<span class="etiqueta-status etiqueta-${status}"><span class="bolinha-status"></span>${ROTULO_STATUS[status] ?? status}</span>`;
 }
 
 /* "Maria Oliveira" -> "MO" */
@@ -109,11 +109,11 @@ export function formatarTelefone(numero) {
 export function toast(mensagem, tipo = "sucesso") {
   const regiao = $("#toasts");
   const el = document.createElement("div");
-  el.className = `toast toast--${tipo}`;
+  el.className = `aviso aviso-${tipo}`;
   el.innerHTML = `${icone(tipo === "erro" ? "i-info" : "i-check-circle")}<span>${escapar(mensagem)}</span>`;
   regiao.append(el);
   setTimeout(() => {
-    el.classList.add("is-leaving");
+    el.classList.add("saindo");
     el.addEventListener("animationend", () => el.remove(), { once: true });
   }, 3200);
 }
