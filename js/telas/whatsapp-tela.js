@@ -97,14 +97,18 @@ function renderizarFiltros() {
 }
 
 function renderizarLista() {
-  let itens = listarAtendimentos();
+  const atendimentos = listarAtendimentos();
+  let itens = atendimentos;
   if (estado.filtro !== "todos") itens = filtrarAtendimentos(itens, estado.filtro);
   if (estado.busca) itens = itens.filter((a) => a.cliente.toLowerCase().includes(estado.busca));
 
   if (!itens.length) {
+    const dica = atendimentos.length
+      ? "Altere o filtro ou a busca."
+      : "Use Novo atendimento para iniciar uma conversa.";
     els.lista.innerHTML = `
       <li class="empty-state">${icone("i-search")}
-        <strong>Nenhuma conversa</strong><span>Altere o filtro ou a busca.</span></li>`;
+        <strong>Nenhuma conversa</strong><span>${dica}</span></li>`;
     return;
   }
 
