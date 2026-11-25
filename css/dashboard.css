@@ -1,0 +1,479 @@
+/* ==========================================================================
+   dashboard.css — tela 1: DASHBOARD
+   Indicadores (números do topo), gráfico de rosca "Clientes por origem",
+   gráfico de linha "Conversões (vendas)", desempenho da IA, status dos
+   atendimentos e atendimentos recentes.
+   Usa também o comum.css (cartões, botões, etiquetas, avatares).
+   ========================================================================== */
+
+
+/* Seletor "Últimos 7 dias", no canto direito do cabeçalho */
+.seletor-periodo {
+  position: relative; /* referência para posicionar o ícone de calendário */
+  display: flex;
+  align-items: center;
+  background-color: #13132a;
+  border: 1px solid #25254a;
+  border-radius: 8px;
+}
+
+/* Ícone de calendário por cima da lista, à esquerda */
+.seletor-periodo .icone {
+  position: absolute; /* fica por cima do campo, sem empurrar o texto */
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  color: #8d8bb0;
+  pointer-events: none; /* o clique passa direto para a lista */
+}
+
+/* A lista de períodos em si, sem borda e sem fundo */
+.seletor-periodo select {
+  border: 0;
+  background-color: transparent;
+  background-image: none; /* tira a setinha padrão dos selects */
+  min-height: 36px;
+  padding: 6px 32px 6px 34px; /* espaço à esquerda para o ícone */
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Linha com os 5 indicadores (Clientes, Finalizados pela IA...) */
+.grade-indicadores {
+  display: grid; /* organiza os indicadores em colunas */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); /* 5 colunas iguais (minmax(0, 1fr) impede que um texto longo estique a coluna) */
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Cada indicador: caixa com nome, número grande e porcentagem */
+.indicador {
+  padding: 16px 20px;
+  border-radius: 16px;
+  background-image: linear-gradient(180deg, #13132a, rgba(19, 19, 42, 0.85));
+  border: 1px solid #25254a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+/* Ao passar o mouse: borda roxa e sobe 2px */
+.indicador:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Nome do indicador (ex.: "Clientes (total)") */
+.indicador-nome {
+  color: #8d8bb0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Linha com o número de um lado e a porcentagem do outro */
+.indicador-linha {
+  display: flex;
+  align-items: flex-end; /* alinha pela parte de baixo */
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Número grande do indicador */
+.indicador-valor {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums; /* todos os algarismos com a mesma largura */
+}
+
+/* Pílula com a porcentagem ao lado do número */
+.variacao {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Verde: bom resultado */
+.variacao-positiva {
+  background-color: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+}
+
+/* Vermelho: resultado ruim */
+.variacao-negativa {
+  background-color: rgba(244, 63, 94, 0.14);
+  color: #f43f5e;
+}
+
+/* Laranja: atenção */
+.variacao-alerta {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #f59e0b;
+}
+
+/* Cinza: neutro */
+.variacao-neutra {
+  background-color: #22224a;
+  color: #c9c8e0;
+}
+
+/* Linhas de cartões abaixo dos indicadores (2 colunas) */
+.grade-painel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* 2 colunas iguais */
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Última linha de cartões: 3 colunas */
+.grade-painel-tres {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Cartão "Clientes por origem": rosca à esquerda e legenda à direita */
+.grafico-rosca-area {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap; /* se não couber, a legenda desce para baixo da rosca */
+}
+
+/* A rosca: círculo colorido (as cores das fatias são colocadas pelo JavaScript) */
+.grafico-rosca {
+  position: relative; /* referência para posicionar o centro */
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 18px rgba(124, 58, 237, 0.35)); /* brilho roxo em volta */
+}
+
+/* Centro da rosca: círculo escuro por cima, com o total de clientes no meio */
+.grafico-rosca-centro {
+  position: absolute; /* fica por cima da rosca, 22px para dentro de cada lado */
+  top: 22px;
+  right: 22px;
+  bottom: 22px;
+  left: 22px;
+  border-radius: 50%;
+  background-color: #13132a; /* mesma cor do cartão: forma o "buraco" da rosca */
+  display: grid; /* grid usado só para centralizar o texto */
+  align-content: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.grafico-rosca-centro strong {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.grafico-rosca-centro small {
+  color: #8d8bb0;
+  font-size: 12px;
+}
+
+/* Legenda da rosca (Instagram posts, Instagram direct...) */
+.legenda-rosca {
+  flex: 1;
+  min-width: 180px;
+  display: grid;
+  gap: 12px;
+}
+
+/* Cada linha da legenda: quadradinho de cor, nome e porcentagem */
+.legenda-rosca li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c9c8e0;
+}
+
+/* Nome da origem ocupa o meio e empurra a porcentagem para a direita */
+.legenda-nome {
+  flex: 1;
+}
+
+.legenda-rosca strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quadradinho com a cor da fatia */
+.legenda-cor {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Cartão "Conversões (vendas)": valor em reais e porcentagem */
+.vendas-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.vendas-valor {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Gráfico de linha verde das vendas (desenhado em SVG pelo JavaScript) */
+.grafico-linha {
+  width: 100%;
+  height: 150px;
+  overflow: visible; /* deixa os pontos das pontas aparecerem inteiros */
+}
+
+/* Área verde clarinha embaixo da linha */
+.grafico-linha-area {
+  fill: url(#gradVendas); /* degradê verde criado dentro do SVG */
+}
+
+/* A linha verde */
+.grafico-linha-traco {
+  fill: none;
+  stroke: #22c55e;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke; /* a espessura não muda quando o gráfico estica */
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.6)); /* brilho verde */
+}
+
+/* Linhas tracejadas de fundo */
+.grafico-linha-guia {
+  stroke: #25254a;
+  stroke-dasharray: 3 4; /* traço de 3 e espaço de 4 */
+  vector-effect: non-scaling-stroke;
+}
+
+/* Bolinhas em cada ponto da linha */
+.grafico-linha-ponto {
+  fill: #22c55e;
+  stroke: #13132a;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Cartão "Desempenho da IA": lista de métricas com barras */
+.lista-metricas {
+  display: grid;
+  gap: 20px;
+}
+
+/* Nome da métrica e valor na mesma linha */
+.metrica-linha {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: #c9c8e0;
+  font-size: 12px;
+}
+
+.metrica-linha strong {
+  color: #f1f0fb;
+}
+
+/* Barra de progresso: trilho cinza */
+.barra-progresso {
+  height: 8px;
+  border-radius: 999px;
+  background-color: #22224a;
+  overflow: hidden; /* a parte colorida respeita os cantos arredondados */
+}
+
+/* Parte colorida da barra (a largura vem do HTML ou do JavaScript) */
+.barra-preenchida {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background-image: linear-gradient(90deg, #7c3aed, #a78bfa);
+  transition: width 600ms ease; /* a barra cresce devagar */
+}
+
+/* Barra verde (satisfação dos clientes) */
+.barra-verde .barra-preenchida {
+  background-image: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+/* Barra azul-clara (tempo de resposta) */
+.barra-ciano .barra-preenchida {
+  background-image: linear-gradient(90deg, #0891b2, #22d3ee);
+}
+
+/* Cartão "Status dos atendimentos": uma linha por status */
+.resumo-status {
+  display: grid;
+  gap: 16px;
+}
+
+/* Nome do status e quantidade; a barra fica embaixo */
+.resumo-status li {
+  display: grid;
+  grid-template-columns: 1fr auto; /* nome ocupa o espaço, número fica no fim */
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 12px;
+  color: #c9c8e0;
+}
+
+.resumo-status strong {
+  color: #f1f0fb;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A barra ocupa a linha inteira, embaixo do nome */
+.resumo-status .barra-progresso {
+  grid-column: 1 / -1; /* vai da primeira até a última coluna */
+  height: 6px;
+}
+
+/* Uma cor de barra para cada status */
+.barra-em_atendimento .barra-preenchida {
+  background-image: none;
+  background-color: #8b5cf6;
+}
+
+.barra-aguardando_humano .barra-preenchida {
+  background-image: none;
+  background-color: #f59e0b;
+}
+
+.barra-assumido .barra-preenchida {
+  background-image: none;
+  background-color: #60a5fa;
+}
+
+.barra-resolvido .barra-preenchida {
+  background-image: none;
+  background-color: #22c55e;
+}
+
+/* Link roxo "Ver todos" no topo do cartão de atendimentos recentes */
+.link-ver-todos {
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.link-ver-todos:hover {
+  color: #c4b5fd;
+}
+
+/* Cartão "Atendimentos recentes": lista de clientes */
+.lista-recentes {
+  display: grid;
+  gap: 2px;
+}
+
+/* Cada cliente: avatar, nome + última mensagem e etiqueta de status */
+.lista-recentes a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto; /* avatar | texto | etiqueta */
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+  margin: 0 -8px; /* margem negativa: o fundo do hover vai até a borda */
+  border-radius: 8px;
+  transition: background 160ms ease;
+}
+
+.lista-recentes a:hover {
+  background-color: #1a1a35;
+}
+
+.lista-recentes strong {
+  font-size: 12px;
+}
+
+/* Última mensagem do cliente em cinza, cortada com "..." se for longa */
+.lista-recentes p {
+  color: #8d8bb0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* --------------------------------------------------------------------------
+   TELAS MENORES
+   -------------------------------------------------------------------------- */
+
+/* Notebook (até 1280px) */
+@media (max-width: 1280px) {
+  /* Indicadores em 3 colunas */
+  .grade-indicadores {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  /* Última linha em 2 colunas... */
+  .grade-painel-tres {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  /* ...e "Atendimentos recentes" ocupa a linha toda */
+  .cartao-recentes {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Celular (até 768px) */
+@media (max-width: 768px) {
+  .seletor-periodo select {
+    padding-right: 28px;
+    max-width: 150px;
+  }
+
+  /* Indicadores em 2 colunas */
+  .grade-indicadores {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* O primeiro indicador (Clientes) ocupa a linha toda */
+  .indicador-destaque {
+    grid-column: 1 / -1;
+  }
+
+  .indicador {
+    padding: 16px;
+  }
+
+  .indicador-valor {
+    font-size: 24px;
+  }
+
+  /* Todos os cartões um embaixo do outro */
+  .grade-painel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .grade-painel-tres {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .grafico-rosca-area {
+    justify-content: center;
+    gap: 20px;
+  }
+}
+
+/* Celular pequeno (até 420px): rosca menor */
+@media (max-width: 420px) {
+  .grafico-rosca {
+    width: 150px;
+    height: 150px;
+  }
+}

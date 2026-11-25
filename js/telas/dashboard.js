@@ -45,26 +45,27 @@ function renderizarPeriodo(chave) {
   // Desempenho da IA: resolução = finalizados pela IA / total
   const resolucao = Math.round((p.finalizadosIA / total) * 100);
   $("#metricaResolucao").textContent = `${resolucao}%`;
-  $("#barraResolucao").style.setProperty("--valor", `${resolucao}%`);
+  $("#barraResolucao").style.width = `${resolucao}%`;
 
   renderizarOrigem(p.origem, total);
   renderizarVendas(p);
 }
 
-/* Gráfico de rosca com conic-gradient (CSS) */
+/* Gráfico de rosca: um círculo pintado com fatias coloridas (conic-gradient) */
 function renderizarOrigem(origem, total) {
-  const donut = $("#graficoOrigem");
-  let acumulado = 0;
-  ["--a", "--b", "--c"].forEach((variavel, i) => {
-    acumulado += origem[ORIGENS[i].chave];
-    donut.style.setProperty(variavel, `${acumulado}%`);
-  });
+  // Onde cada fatia termina, somando as porcentagens (ex.: 58%, 75%, 90%)
+  const fim1 = origem[ORIGENS[0].chave];
+  const fim2 = fim1 + origem[ORIGENS[1].chave];
+  const fim3 = fim2 + origem[ORIGENS[2].chave];
+  $("#graficoOrigem").style.backgroundImage =
+    `conic-gradient(${ORIGENS[0].cor} 0 ${fim1}%, ${ORIGENS[1].cor} ${fim1}% ${fim2}%, ` +
+    `${ORIGENS[2].cor} ${fim2}% ${fim3}%, ${ORIGENS[3].cor} ${fim3}% 100%)`;
   $("#donutTotal").textContent = total.toLocaleString("pt-BR");
 
   $("#legendaOrigem").innerHTML = ORIGENS.map((o) => `
     <li>
-      <span class="donut-legend__dot" style="background:${o.cor}"></span>
-      <span>${o.rotulo}</span>
+      <span class="legenda-cor" style="background-color:${o.cor}"></span>
+      <span class="legenda-nome">${o.rotulo}</span>
       <strong>${origem[o.chave]}%</strong>
     </li>`).join("");
 }
@@ -83,7 +84,7 @@ function renderizarVendas(p) {
     return [x.toFixed(1), y.toFixed(1)];
   });
   const linha = pontos.map(([x, y]) => `${x},${y}`).join(" ");
-  const grade = [0.25, 0.5, 0.75].map((f) => `<line class="line-chart__grid" x1="0" x2="${largura}" y1="${altura * f}" y2="${altura * f}"/>`).join("");
+  const grade = [0.25, 0.5, 0.75].map((f) => `<line class="grafico-linha-guia" x1="0" x2="${largura}" y1="${altura * f}" y2="${altura * f}"/>`).join("");
 
   $("#graficoVendas").innerHTML = `
     <defs>
@@ -93,9 +94,9 @@ function renderizarVendas(p) {
       </linearGradient>
     </defs>
     ${grade}
-    <polygon class="line-chart__area" points="0,${altura} ${linha} ${largura},${altura}"/>
-    <polyline class="line-chart__line" points="${linha}"/>
-    ${pontos.map(([x, y]) => `<circle class="line-chart__dot" cx="${x}" cy="${y}" r="3"/>`).join("")}`;
+    <polygon class="grafico-linha-area" points="0,${altura} ${linha} ${largura},${altura}"/>
+    <polyline class="grafico-linha-traco" points="${linha}"/>
+    ${pontos.map(([x, y]) => `<circle class="grafico-linha-ponto" cx="${x}" cy="${y}" r="3"/>`).join("")}`;
 }
 
 /* Atualizado em tempo real quando um status muda na tela de WhatsApp */
@@ -110,7 +111,7 @@ function renderizarAtendimentos(atendimentos) {
         <li>
           <span>${ROTULO_STATUS[status]}</span>
           <strong>${qtd}</strong>
-          <div class="progress progress--${status}"><span style="--valor:${(qtd / total) * 100}%"></span></div>
+          <div class="barra-progresso barra-${status}"><span class="barra-preenchida" style="width:${(qtd / total) * 100}%"></span></div>
         </li>`;
     })
     .join("");
@@ -122,7 +123,7 @@ function renderizarAtendimentos(atendimentos) {
       return `
         <li>
           <a href="#whatsapp/${a.id}">
-            <span class="avatar avatar--sm" data-cor="${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
+            <span class="avatar avatar-pequeno avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
             <div>
               <strong>${escapar(a.cliente)}</strong>
               <p>${escapar(ultima?.texto ?? "Novo atendimento")}</p>
