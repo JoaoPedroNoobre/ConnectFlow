@@ -6,6 +6,7 @@
 
 import { STATUS, filtrarAtendimentos } from "../atendimentos.js";
 import { gerarLinkWhatsApp } from "../whatsapp.js";
+import { consultarGemini, iaAtiva } from "./agente.js";
 import {
   listarAtendimentos, buscarAtendimento, inscrever,
   mudarStatus, adicionarMensagem, novoAtendimento
@@ -16,6 +17,8 @@ import {
 } from "../ui.js";
 
 const estado = { filtro: "todos", busca: "", selecionadoId: null };
+// Guarda a consulta em andamento de cada conversa.
+const consultasIA = new Map();
 
 const els = {};
 
@@ -49,7 +52,8 @@ export function iniciarWhatsApp() {
   });
 
   $("#view-whatsapp").addEventListener("click", tratarAcao);
-  els.janela.addEventListener("submit", enviarMensagem);
+  els.janela.addEventListener("submit", tratarEnvio);
+  document.addEventListener("cf:salvo", atualizarPausaIA);
   configurarModal();
 
   inscrever(renderizarTudo);
@@ -99,14 +103,18 @@ function renderizarFiltros() {
 }
 
 function renderizarLista() {
-  let itens = listarAtendimentos();
+  const atendimentos = listarAtendimentos();
+  let itens = atendimentos;
   if (estado.filtro !== "todos") itens = filtrarAtendimentos(itens, estado.filtro);
   if (estado.busca) itens = itens.filter((a) => a.cliente.toLowerCase().includes(estado.busca));
 
   if (!itens.length) {
+    const dica = atendimentos.length
+      ? "Altere o filtro ou a busca."
+      : "Use Novo atendimento para iniciar uma conversa.";
     els.lista.innerHTML = `
-      <li class="estado-vazio">${icone("i-search")}
-        <strong>Nenhuma conversa</strong><span>Altere o filtro ou a busca.</span></li>`;
+      <li class="empty-state">${icone("i-search")}
+        <strong>Nenhuma conversa</strong><span>${dica}</span></li>`;
     return;
   }
 
@@ -179,9 +187,9 @@ function rodape(status) {
       </form>`;
   }
   const textos = {
-    [STATUS.EM_ATENDIMENTO]: [icone("i-sparkles"), "A IA está conduzindo este atendimento.", ""],
-    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", "aviso-aguardando"],
-    [STATUS.RESOLVIDO]: [icone("i-check-circle"), "Este atendimento foi resolvido.", "aviso-resolvido"]
+    [STATUS.EM_ATENDIMENTO]: [icone("i-sparkles"), iaAtiva() ? "A IA está conduzindo este atendimento." : "A IA está pausada.", ""],
+    [STATUS.AGUARDANDO_HUMANO]: [icone("i-clock"), "O cliente está aguardando um atendente.", "composer-lock--wait"],
+    [STATUS.RESOLVIDO]: [icone("i-check-circle"), "Este atendimento foi resolvido.", "composer-lock--done"]
   };
   const [ic, texto, extra] = textos[status];
   const botao = status === STATUS.RESOLVIDO
@@ -190,9 +198,20 @@ function rodape(status) {
   return `<div class="aviso-bloqueado ${extra}"><span>${ic}${texto}</span>${botao}</div>`;
 }
 
+// Usa o mesmo estilo do campo de atendimento, com uma ação separada.
+function formularioSimulacao(consultando) {
+  return `
+    <form class="composer" data-form="mensagem-cliente">
+      <label class="sr-only" for="campoCliente">Mensagem simulada do cliente</label>
+      <input id="campoCliente" name="mensagem" type="text" placeholder="Simule uma mensagem do cliente…" autocomplete="off" required>
+      <button class="btn btn--secondary btn--sm" type="submit" ${consultando ? "disabled" : ""}>Simular</button>
+    </form>`;
+}
+
 function renderizarJanela() {
   const a = buscarAtendimento(estado.selecionadoId);
   if (!a) {
+    delete els.janela.dataset.atendimento;
     els.janela.innerHTML = `
       <div class="estado-vazio">${icone("i-whatsapp")}
         <strong>Selecione uma conversa</strong>
@@ -200,6 +219,18 @@ function renderizarJanela() {
     return;
   }
 
+  // Uma resposta pode chegar enquanto a pessoa ainda está digitando.
+  const campos = {};
+  const foco = document.activeElement;
+  if (els.janela.dataset.atendimento === a.id) {
+    for (const campo of els.janela.querySelectorAll("form.composer input")) {
+      campos[campo.id] = { texto: campo.value, focado: campo === foco };
+    }
+  }
+
+  const consultando = consultasIA.has(a.id);
+  const link = linkWhatsApp(a.telefone);
+  els.janela.dataset.atendimento = a.id;
   els.janela.innerHTML = `
     <header class="janela-conversa-topo">
       <button class="botao-icone botao-voltar-lista" type="button" data-action="voltar-lista" aria-label="Voltar para a lista">${icone("i-arrow-left")}</button>
@@ -210,14 +241,23 @@ function renderizarJanela() {
       </div>
       <div class="janela-conversa-acoes">
         ${botoesAcao(a.status)}
-        ${linkWhatsApp(a.telefone) ? `<a class="botao-icone" href="${linkWhatsApp(a.telefone)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp" title="Abrir no WhatsApp">${icone("i-phone")}</a>` : ""}
-        <button class="botao-icone" type="button" data-action="abrir-info" aria-label="Informações do cliente" title="Informações do cliente">${icone("i-more")}</button>
+        ${link ? `<a class="icon-btn" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="Abrir conversa no WhatsApp" title="Abrir no WhatsApp">${icone("i-phone")}</a>` : ""}
+        <button class="icon-btn" type="button" data-action="abrir-info" aria-label="Informações do cliente" title="Informações do cliente">${icone("i-more")}</button>
       </div>
     </header>
-    <div class="area-mensagens" id="listaMensagens">
-      ${a.mensagens.length ? a.mensagens.map(renderizarMensagem).join("") : '<p class="mensagem-sistema">Nenhuma mensagem ainda</p>'}
+    <div class="messages" id="listaMensagens">
+      ${a.mensagens.length ? a.mensagens.map(renderizarMensagem).join("") : '<p class="msg-system">Nenhuma mensagem ainda</p>'}
+      ${consultando ? '<p class="msg-system">Consultando o Gemini…</p>' : ""}
     </div>
+    ${a.status !== STATUS.RESOLVIDO ? formularioSimulacao(consultando) : ""}
     ${rodape(a.status)}`;
+
+  for (const campo of els.janela.querySelectorAll("form.composer input")) {
+    const rascunho = campos[campo.id];
+    if (!rascunho) continue;
+    campo.value = rascunho.texto;
+    if (rascunho.focado) campo.focus({ preventScroll: true });
+  }
 
   const msgs = $("#listaMensagens");
   msgs.scrollTop = msgs.scrollHeight;
@@ -275,13 +315,14 @@ function tratarAcao(e) {
 
   switch (botao.dataset.action) {
     case "assumir":
+      cancelarConsultaIA(id);
       mudarStatus(id, STATUS.ASSUMIDO, "Atendimento assumido por você", hora);
       toast("Você assumiu o atendimento. A IA foi pausada nesta conversa.");
       $("#campoMensagem")?.focus();
       break;
     case "devolver-ia":
       mudarStatus(id, STATUS.EM_ATENDIMENTO, "Conversa devolvida para a IA", hora);
-      toast("A IA voltou a conduzir esta conversa.");
+      toast(iaAtiva() ? "A IA voltou a conduzir esta conversa." : "Conversa devolvida. A IA continua pausada.");
       break;
     case "resolver":
       mudarStatus(id, STATUS.RESOLVIDO, "Atendimento marcado como resolvido", hora);
@@ -305,14 +346,75 @@ function tratarAcao(e) {
   }
 }
 
-function enviarMensagem(e) {
-  if (!e.target.matches('[data-form="mensagem"]')) return;
+// Distingue o envio humano da mensagem simulada do cliente.
+function tratarEnvio(e) {
+  const tipo = e.target.dataset.form;
+  if (tipo !== "mensagem" && tipo !== "mensagem-cliente") return;
   e.preventDefault();
+
+  const atendimento = buscarAtendimento(estado.selecionadoId);
+  if (!atendimento || atendimento.status === STATUS.RESOLVIDO) return;
+
   const campo = e.target.elements.mensagem;
   const texto = campo.value.trim();
   if (!texto) return;
-  adicionarMensagem(estado.selecionadoId, { autor: "humano", texto, hora: horaAtual() });
+
+  if (tipo === "mensagem-cliente") {
+    if (consultasIA.has(atendimento.id)) return;
+    campo.value = "";
+    receberMensagemCliente(atendimento, texto);
+    $("#campoCliente")?.focus();
+    return;
+  }
+
+  if (atendimento.status !== STATUS.ASSUMIDO) return;
+  campo.value = "";
+  adicionarMensagem(atendimento.id, { autor: "humano", texto, hora: horaAtual() });
   $("#campoMensagem")?.focus();
+}
+
+// Registra a mensagem do cliente, mesmo quando a IA não pode responder.
+async function receberMensagemCliente(atendimento, texto) {
+  const id = atendimento.id;
+  let consulta = null;
+
+  if (atendimento.status === STATUS.EM_ATENDIMENTO && iaAtiva()) {
+    consulta = new AbortController();
+    consultasIA.set(id, consulta);
+  }
+  adicionarMensagem(id, { autor: "cliente", texto, hora: horaAtual() });
+  if (!consulta) return;
+
+  let mensagem;
+  try {
+    const resposta = await consultarGemini(texto, consulta.signal);
+    mensagem = { autor: "ia", texto: resposta };
+  } catch (erro) {
+    mensagem = { autor: "sistema", texto: erro.message };
+  }
+
+  // Uma consulta cancelada já saiu da lista e pode ter sido substituída.
+  if (consultasIA.get(id) !== consulta) return;
+  consultasIA.delete(id);
+  if (buscarAtendimento(id)?.status === STATUS.EM_ATENDIMENTO && iaAtiva()) {
+    adicionarMensagem(id, { ...mensagem, hora: horaAtual() });
+  } else {
+    renderizarJanela();
+  }
+}
+
+// Descarta respostas pendentes quando a pessoa assume ou pausa a IA.
+function cancelarConsultaIA(id) {
+  consultasIA.get(id)?.abort();
+  consultasIA.delete(id);
+}
+
+function atualizarPausaIA(e) {
+  if (e.detail !== "cf-agente") return;
+  if (!iaAtiva()) {
+    for (const id of consultasIA.keys()) cancelarConsultaIA(id);
+  }
+  renderizarJanela();
 }
 
 /* ---------- Modal "Novo atendimento" ---------- */

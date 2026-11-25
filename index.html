@@ -164,12 +164,12 @@
                   <div class="barra-progresso"><span class="barra-preenchida" id="barraResolucao"></span></div>
                 </li>
                 <li>
-                  <div class="metrica-linha"><span>Satisfação dos clientes</span><strong>4,6 / 5</strong></div>
-                  <div class="barra-progresso barra-verde"><span class="barra-preenchida" style="width: 92%"></span></div>
+                  <div class="metric-list__row"><span>Satisfação dos clientes</span><strong>0 / 5</strong></div>
+                  <div class="progress progress--green"><span style="--valor: 0%"></span></div>
                 </li>
                 <li>
-                  <div class="metrica-linha"><span>Tempo médio de resposta</span><strong>8 s</strong></div>
-                  <div class="barra-progresso barra-ciano"><span class="barra-preenchida" style="width: 85%"></span></div>
+                  <div class="metric-list__row"><span>Tempo médio de resposta</span><strong>0 s</strong></div>
+                  <div class="progress progress--cyan"><span style="--valor: 0%"></span></div>
                 </li>
               </ul>
             </article>
@@ -251,27 +251,29 @@
               </div>
 
               <!-- Catálogo -->
-              <div class="painel-aba" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
-                <p class="texto-dica">Base usada pela IA para consultar itens e informar preços.</p>
-                <div class="formulario-catalogo" id="catalogoNovo">
-                  <div class="campo campo-produto">
+              <div class="tab-panel" id="painel-ag-catalogo" role="tabpanel" aria-labelledby="tab-ag-catalogo" hidden>
+                <p class="panel-hint">Catálogo do Supabase usado pela IA. Cadastro e remoção indisponíveis nesta etapa de leitura.</p>
+                <div class="catalog-form" id="catalogoNovo">
+                  <div class="field">
                     <label for="catNome">Produto ou serviço</label>
-                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura">
+                    <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura" disabled>
                   </div>
                   <div class="campo">
                     <label for="catCategoria">Categoria</label>
-                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos">
+                    <input id="catCategoria" type="text" placeholder="Ex.: Bolos" disabled>
                   </div>
                   <div class="campo">
                     <label for="catPreco">Preço (R$)</label>
-                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00">
+                    <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00" disabled>
                   </div>
-                  <button class="botao botao-contorno" type="button" data-action="adicionar-item">
-                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
+                  <button class="btn btn--outline" type="button" data-action="adicionar-item" disabled>
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>Adicionar
                   </button>
                 </div>
-                <div class="tabela-rolagem">
-                  <table class="tabela">
+                <button class="btn btn--outline btn--sm" type="button" id="atualizarCatalogo">Atualizar catálogo</button>
+                <p class="panel-hint" id="estadoCatalogo" role="status"></p>
+                <div class="table-wrap">
+                  <table class="table">
                     <thead>
                       <tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col" class="coluna-numero">Preço</th><th scope="col"><span class="texto-leitor-tela">Ações</span></th></tr>
                     </thead>
@@ -368,7 +370,96 @@
                   <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-send"/></svg>
                 </button>
               </form>
-              <p class="previa-agente-nota">Simulação local com o catálogo atual — a IA real será conectada pelas APIs.</p>
+              <p class="agent-preview__note">A prévia usa o Gemini e o catálogo da empresa.</p>
+            </aside>
+          </div>
+        </section>
+
+        <!-- ================= 4. INSTAGRAM STUDIO ================= -->
+        <section class="view" id="view-instagram" data-view="instagram" hidden>
+          <div class="studio-grid">
+            <div class="studio-main">
+              <!-- Editor (aparece em "Novo Post" ou ao editar) -->
+              <form class="card studio-editor" id="formPost" novalidate hidden>
+                <header class="card__header">
+                  <h2 class="card__title" id="tituloEditor">Novo post</h2>
+                  <button class="icon-btn" type="button" data-action="fechar-editor" aria-label="Fechar editor">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+                  </button>
+                </header>
+
+                <div class="segmented" role="radiogroup" aria-label="Formato">
+                  <label><input type="radio" name="formato" value="feed" checked><span>Feed</span></label>
+                  <label><input type="radio" name="formato" value="story"><span>Story</span></label>
+                </div>
+
+                <label class="dropzone" id="dropzone">
+                  <input type="file" id="postImagem" accept="image/*" class="sr-only">
+                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-upload"/></svg>
+                  <strong>Clique ou arraste uma imagem</strong>
+                  <small>PNG ou JPG — a imagem fica apenas no seu navegador</small>
+                </label>
+
+                <div class="field">
+                  <div class="field__label-row">
+                    <label for="postLegenda">Legenda</label>
+                    <small class="counter" id="contadorLegenda">0 / 2200</small>
+                  </div>
+                  <textarea id="postLegenda" name="legenda" rows="4" maxlength="2200" placeholder="Escreva a legenda da publicação..."></textarea>
+                </div>
+
+                <div class="field">
+                  <label for="postHashtags">Hashtags</label>
+                  <input id="postHashtags" name="hashtags" type="text" placeholder="#confeitaria #docesartesanais">
+                </div>
+
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="postData">Data</label>
+                    <input id="postData" name="data" type="date">
+                  </div>
+                  <div class="field">
+                    <label for="postHora">Horário</label>
+                    <input id="postHora" name="hora" type="time" value="18:00">
+                  </div>
+                </div>
+
+                <p class="form-error" id="erroPost" role="alert" hidden></p>
+
+                <div class="form-actions">
+                  <button class="btn btn--outline" type="button" data-action="salvar-rascunho">Salvar rascunho</button>
+                  <button class="btn btn--primary" type="submit">
+                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-calendar"/></svg>Programar post
+                  </button>
+                </div>
+              </form>
+
+              <section class="card studio-list" aria-label="Publicações">
+                <div class="pills" id="filtrosPosts" role="tablist" aria-label="Filtrar publicações"></div>
+                <ul class="post-list" id="listaPosts"></ul>
+              </section>
+            </div>
+
+            <aside class="card studio-preview" aria-labelledby="tituloPreviaPost">
+              <h2 class="card__title" id="tituloPreviaPost">Prévia do Post</h2>
+              <article class="ig-post" id="previewPost" data-formato="feed">
+                <header class="ig-post__header">
+                  <span class="ig-post__avatar" id="previewAvatar">E</span>
+                  <strong id="previewUsuario">empresaexemplo</strong>
+                  <svg class="icon ig-post__more" aria-hidden="true"><use href="assets/icons.svg#i-more"/></svg>
+                </header>
+                <div class="ig-post__media" id="previewMidia" data-fundo="1">
+                  <p class="ig-post__headline" id="previewTitulo">Sua imagem aparecerá aqui</p>
+                </div>
+                <div class="ig-post__actions" aria-hidden="true">
+                  <svg class="icon"><use href="assets/icons.svg#i-heart"/></svg>
+                  <svg class="icon"><use href="assets/icons.svg#i-message"/></svg>
+                  <svg class="icon"><use href="assets/icons.svg#i-send"/></svg>
+                  <svg class="icon ig-post__save"><use href="assets/icons.svg#i-bookmark"/></svg>
+                </div>
+                <p class="ig-post__caption"><strong id="previewUsuario2">empresaexemplo</strong> <span id="previewLegenda">A legenda da publicação aparece aqui.</span> <span class="ig-post__tags" id="previewTags"></span></p>
+                <p class="ig-post__schedule" id="previewAgendamento"></p>
+              </article>
             </aside>
           </div>
         </section>

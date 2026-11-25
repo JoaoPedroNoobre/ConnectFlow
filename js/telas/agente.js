@@ -1,11 +1,8 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Tela 3 — Agente de IA
-   Configuração do assistente virtual (Geral, Catálogo, Respostas e
-   Comportamento) e uma prévia que SIMULA localmente as respostas com base no
-   catálogo. A IA real será conectada via API/n8n pelo backend do projeto.
+   Configuração do assistente virtual, catálogo e prévia com o Gemini.
    ========================================================================== */
 
-import { catalogoDemo } from "../dados-demo.js";
 import {
   $, $$, icone, escapar, formatarPreco, toast, horaAtual,
   lerArmazenado, gravarArmazenado, lerFormulario, configurarAbas
@@ -13,25 +10,16 @@ import {
 
 const CHAVE_AGENTE = "cf-agente";
 const CHAVE_CATALOGO = "cf-catalogo";
-let catalogo = lerArmazenado(CHAVE_CATALOGO, catalogoDemo);
+let catalogo = [];
 
 export function iniciarAgente() {
   const form = $("#formAgente");
   configurarAbas(form);
-  renderizarCatalogo();
+  $("#atualizarCatalogo").addEventListener("click", carregarCatalogo);
+  carregarCatalogo();
   configurarContador();
   reiniciarTeste();
   atualizarIndicadoresIA();
-
-  // Catálogo (campos sem <form> próprio para não aninhar formulários)
-  $('[data-action="adicionar-item"]').addEventListener("click", adicionarItem);
-  $("#catalogoNovo").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      adicionarItem();
-    }
-  });
-  $("#tabelaCatalogo").addEventListener("click", removerItem);
 
   // Prévia
   $("#formTeste").addEventListener("submit", (e) => {
@@ -98,11 +86,38 @@ function configurarContador() {
 
 /* ---------- Catálogo ---------- */
 
+// Busca os produtos reais e informa quando a consulta falha.
+async function carregarCatalogo() {
+  const botao = $("#atualizarCatalogo");
+  const estado = $("#estadoCatalogo");
+  botao.disabled = true;
+  estado.textContent = "Carregando catálogo…";
+  $("#tabelaCatalogo").textContent = "";
+  catalogo = [];
+
+  try {
+    const resposta = await fetch("/api/produtos");
+    const dados = await resposta.json();
+    if (!resposta.ok || !Array.isArray(dados.produtos)) {
+      estado.textContent = dados.erro || "Não foi possível carregar o catálogo do Supabase.";
+      return;
+    }
+
+    catalogo = dados.produtos;
+    renderizarCatalogo();
+    estado.textContent = "";
+  } catch {
+    estado.textContent = "Não foi possível carregar o catálogo do Supabase. Tente novamente.";
+  } finally {
+    botao.disabled = false;
+  }
+}
+
 function renderizarCatalogo() {
   const corpo = $("#tabelaCatalogo");
   if (!catalogo.length) {
-    corpo.innerHTML = `<tr><td colspan="4"><div class="estado-vazio">${icone("i-package")}
-      <strong>Catálogo vazio</strong><span>Adicione produtos ou serviços para a IA consultar.</span></div></td></tr>`;
+    corpo.innerHTML = `<tr><td colspan="4"><div class="empty-state">${icone("i-package")}
+      <strong>Catálogo vazio</strong><span>A empresa ainda não tem produtos cadastrados.</span></div></td></tr>`;
     return;
   }
   corpo.innerHTML = catalogo
@@ -110,12 +125,13 @@ function renderizarCatalogo() {
       <tr>
         <td><strong>${escapar(item.nome)}</strong></td>
         <td>${escapar(item.categoria || "—")}</td>
-        <td class="coluna-numero">${formatarPreco(item.preco)}</td>
-        <td class="coluna-acoes"><button class="botao-icone botao-icone-excluir" type="button" data-remover="${item.id}" aria-label="Remover ${escapar(item.nome)}">${icone("i-trash")}</button></td>
+        <td class="num">${formatarPreco(item.preco)}</td>
+        <td><button class="icon-btn icon-btn--danger" type="button" data-remover="${escapar(item.id)}" aria-label="Remover ${escapar(item.nome)}" disabled>${icone("i-trash")}</button></td>
       </tr>`)
     .join("");
 }
 
+// Guarda a lógica anterior para a próxima etapa. Os botões estão desativados.
 function salvarCatalogo() {
   gravarArmazenado(CHAVE_CATALOGO, catalogo);
   renderizarCatalogo();
@@ -154,7 +170,7 @@ function removerItem(e) {
 
 /* ---------- Prévia do agente (simulação local) ---------- */
 
-const normalizar = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const normalizar = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 function adicionarMensagemTeste(autor, texto) {
   const area = $("#mensagensTeste");
@@ -179,17 +195,63 @@ function reiniciarTeste() {
   else adicionarMensagemTeste("sistema", "IA pausada — as conversas aguardam um atendente");
 }
 
-function perguntar(texto) {
+
+// Envia a pergunta e a configuração. O servidor busca o catálogo atualizado.
+export async function consultarGemini(pergunta, signal) {
+  const dadosEmpresa = lerArmazenado("cf-empresa") || {};
+  const empresa = {
+    nome: dadosEmpresa.nome || "Confeitaria ConnectFlow",
+    descricao: dadosEmpresa.descricao || "Confeitaria de bolos e doces.",
+    endereco: dadosEmpresa.endereco || "Não informado",
+    horario: dadosEmpresa.horario || "Não informado"
+  };
+
+  const resposta = await fetch("/api/ia", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      empresa,
+      pergunta,
+      config: lerFormulario($("#formAgente"))
+    }),
+    signal
+  }).catch(() => {
+    throw new Error("Não foi possível conectar ao servidor da IA.");
+  });
+
+  const dados = await resposta.json().catch(() => null);
+  if (!resposta.ok) throw new Error(dados?.erro || "Não foi possível consultar o Gemini. Tente novamente.");
+  if (typeof dados?.resposta !== "string" || !dados.resposta.trim()) {
+    throw new Error("A IA não retornou uma resposta.");
+  }
+  return dados.resposta;
+}
+
+// Mostra a consulta na prévia sem alterar os atendimentos do WhatsApp.
+async function perguntar(texto) {
   const pergunta = texto.trim();
+
   if (!pergunta) return;
+
   adicionarMensagemTeste("cliente", pergunta);
 
+  if (!iaAtiva()) {
+    adicionarMensagemTeste("sistema", "IA pausada. Aguarde um atendente.");
+    return;
+  }
+
   const digitando = adicionarMensagemTeste("sistema", "digitando…");
-  setTimeout(() => {
+
+  try {
+    const resposta = await consultarGemini(pergunta);
+    adicionarMensagemTeste("ia", resposta);
+  } catch (erro) {
+    adicionarMensagemTeste("sistema", erro.message);
+  } finally {
     digitando.remove();
-    gerarResposta(pergunta).forEach(([autor, resposta]) => adicionarMensagemTeste(autor, resposta));
-  }, 650);
+  }
 }
+
 
 /* Retorna uma lista de mensagens [autor, texto] */
 function gerarResposta(pergunta) {

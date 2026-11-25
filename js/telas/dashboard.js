@@ -1,136 +1,121 @@
-/* ==========================================================================
-   Tela 1 — Dashboard
-   Métricas de atendimentos, clientes, conversões e desempenho da IA.
-   ========================================================================== */
-
-import { STATUS } from "../atendimentos.js";
-import { periodosDemo } from "../dados-demo.js";
+// Dashboard: indicadores do período e atendimentos compartilhados com o WhatsApp.
+import { STATUS, filtrarAtendimentos } from "../atendimentos.js";
 import { listarAtendimentos, inscrever } from "../estado.js";
 import { $, escapar, iniciais, corAvatar, badgeStatus, formatarPreco, ROTULO_STATUS } from "../ui.js";
 
 const ORIGENS = [
-  { chave: "instagramPosts", rotulo: "Instagram (posts)", cor: "#8b5cf6" },
-  { chave: "instagramDirect", rotulo: "Instagram (direct)", cor: "#6366f1" },
-  { chave: "outros", rotulo: "Outros", cor: "#22d3ee" },
-  { chave: "linkDireto", rotulo: "Link direto", cor: "#a78bfa" }
+  { rotulo: "Instagram (posts)", cor: "#8b5cf6" },
+  { rotulo: "Instagram (direct)", cor: "#6366f1" },
+  { rotulo: "Outros", cor: "#22d3ee" },
+  { rotulo: "Link direto", cor: "#a78bfa" }
 ];
 
-const pct = (parte, total) => `${((parte / total) * 100).toFixed(1).replace(".", ",")}%`;
+// Calcula a porcentagem e evita dividir por zero.
+function calcularPercentual(parte, total) {
+  if (total === 0) return 0;
+  return (parte / total) * 100;
+}
 
+// Carrega a tela e escuta mudanças no filtro e na lista do WhatsApp.
 export function iniciarDashboard() {
   const seletor = $("#filtroPeriodo");
-  seletor.addEventListener("change", () => renderizarPeriodo(seletor.value));
-  renderizarPeriodo(seletor.value);
+  seletor.addEventListener("change", function () {
+    renderizarPeriodo(seletor.selectedOptions[0].textContent);
+  });
+  renderizarPeriodo(seletor.selectedOptions[0].textContent);
 
   renderizarAtendimentos(listarAtendimentos());
   inscrever(renderizarAtendimentos);
 }
 
-function renderizarPeriodo(chave) {
-  const p = periodosDemo[chave];
-  const total = p.finalizadosIA + p.emTratamento + p.naoConcluidos + p.intervencaoHumana;
+// Mostra zero enquanto não há dados para os indicadores do período.
+function renderizarPeriodo(periodo) {
+  const indicadores = ["kpiFinalizados", "kpiTratamento", "kpiNaoConcluidos", "kpiIntervencao"];
 
-  // KPIs
-  $("#kpiClientes").textContent = total.toLocaleString("pt-BR");
-  $("#kpiClientesTend").textContent = `+${p.tendencia.clientes}%`;
-  $("#kpiFinalizados").textContent = p.finalizadosIA.toLocaleString("pt-BR");
-  $("#kpiFinalizadosPct").textContent = pct(p.finalizadosIA, total);
-  $("#kpiTratamento").textContent = p.emTratamento.toLocaleString("pt-BR");
-  $("#kpiTratamentoPct").textContent = pct(p.emTratamento, total);
-  $("#kpiNaoConcluidos").textContent = p.naoConcluidos.toLocaleString("pt-BR");
-  $("#kpiNaoConcluidosPct").textContent = pct(p.naoConcluidos, total);
-  $("#kpiIntervencao").textContent = p.intervencaoHumana.toLocaleString("pt-BR");
-  $("#kpiIntervencaoPct").textContent = pct(p.intervencaoHumana, total);
+  $("#kpiClientes").textContent = "0";
+  $("#kpiClientesTend").textContent = "0%";
 
-  // Desempenho da IA: resolução = finalizados pela IA / total
-  const resolucao = Math.round((p.finalizadosIA / total) * 100);
-  $("#metricaResolucao").textContent = `${resolucao}%`;
-  $("#barraResolucao").style.width = `${resolucao}%`;
+  for (const id of indicadores) {
+    $(`#${id}`).textContent = "0";
+    $(`#${id}Pct`).textContent = "0%";
+  }
 
-  renderizarOrigem(p.origem, total);
-  renderizarVendas(p);
+  $("#metricaResolucao").textContent = "0%";
+  $("#barraResolucao").style.setProperty("--valor", "0%");
+
+  renderizarOrigem();
+  renderizarVendas(periodo);
 }
 
-/* Gráfico de rosca: um círculo pintado com fatias coloridas (conic-gradient) */
-function renderizarOrigem(origem, total) {
-  // Onde cada fatia termina, somando as porcentagens (ex.: 58%, 75%, 90%)
-  const fim1 = origem[ORIGENS[0].chave];
-  const fim2 = fim1 + origem[ORIGENS[1].chave];
-  const fim3 = fim2 + origem[ORIGENS[2].chave];
-  $("#graficoOrigem").style.backgroundImage =
-    `conic-gradient(${ORIGENS[0].cor} 0 ${fim1}%, ${ORIGENS[1].cor} ${fim1}% ${fim2}%, ` +
-    `${ORIGENS[2].cor} ${fim2}% ${fim3}%, ${ORIGENS[3].cor} ${fim3}% 100%)`;
-  $("#donutTotal").textContent = total.toLocaleString("pt-BR");
+// Mantém a rosca neutra e mostra zero para cada origem.
+function renderizarOrigem() {
+  const rosca = $("#graficoOrigem");
+  let legenda = "";
 
-  $("#legendaOrigem").innerHTML = ORIGENS.map((o) => `
+  rosca.style.background = "var(--border)";
+  $("#donutTotal").textContent = "0";
+
+  for (const item of ORIGENS) {
+    legenda += `
     <li>
-      <span class="legenda-cor" style="background-color:${o.cor}"></span>
-      <span class="legenda-nome">${o.rotulo}</span>
-      <strong>${origem[o.chave]}%</strong>
-    </li>`).join("");
+      <span class="donut-legend__dot" style="background:${item.cor}"></span>
+      <span>${item.rotulo}</span>
+      <strong>0%</strong>
+    </li>`;
+  }
+  $("#legendaOrigem").innerHTML = legenda;
 }
 
-/* Gráfico de linha em SVG gerado a partir da série do período */
-function renderizarVendas(p) {
-  $("#valorVendas").textContent = formatarPreco(p.vendas);
-  $("#tendenciaVendas").textContent = `+${p.tendenciaVendas}%`;
+// Preserva o espaço do gráfico e informa que o período está vazio.
+function renderizarVendas(periodo) {
+  $("#valorVendas").textContent = formatarPreco(0);
+  $("#tendenciaVendas").textContent = "0%";
 
-  const largura = 300, altura = 120, margem = 8;
-  const serie = p.serieVendas;
-  const max = Math.max(...serie), min = Math.min(...serie);
-  const pontos = serie.map((v, i) => {
-    const x = (i / (serie.length - 1)) * largura;
-    const y = altura - margem - ((v - min) / (max - min || 1)) * (altura - margem * 3);
-    return [x.toFixed(1), y.toFixed(1)];
-  });
-  const linha = pontos.map(([x, y]) => `${x},${y}`).join(" ");
-  const grade = [0.25, 0.5, 0.75].map((f) => `<line class="grafico-linha-guia" x1="0" x2="${largura}" y1="${altura * f}" y2="${altura * f}"/>`).join("");
-
-  $("#graficoVendas").innerHTML = `
-    <defs>
-      <linearGradient id="gradVendas" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#22c55e" stop-opacity=".35"/>
-        <stop offset="1" stop-color="#22c55e" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    ${grade}
-    <polygon class="grafico-linha-area" points="0,${altura} ${linha} ${largura},${altura}"/>
-    <polyline class="grafico-linha-traco" points="${linha}"/>
-    ${pontos.map(([x, y]) => `<circle class="grafico-linha-ponto" cx="${x}" cy="${y}" r="3"/>`).join("")}`;
+  const grafico = $("#graficoVendas");
+  grafico.innerHTML = `
+    <line class="line-chart__grid" x1="0" x2="300" y1="30" y2="30"/>
+    <line class="line-chart__grid" x1="0" x2="300" y1="60" y2="60"/>
+    <line class="line-chart__grid" x1="0" x2="300" y1="90" y2="90"/>
+    <text x="150" y="52" text-anchor="middle" fill="var(--text-muted)">Sem dados de vendas</text>
+    <text x="150" y="77" text-anchor="middle" fill="var(--text-muted)"></text>`;
+  $("text:last-child", grafico).textContent = periodo;
+  grafico.setAttribute("aria-label", `Sem dados de vendas para o período: ${periodo}`);
 }
 
-/* Atualizado em tempo real quando um status muda na tela de WhatsApp */
+// Recalcula o resumo e a lista de conversas quando o WhatsApp atualiza os dados.
 function renderizarAtendimentos(atendimentos) {
-  const total = atendimentos.length || 1;
   const ordem = [STATUS.EM_ATENDIMENTO, STATUS.AGUARDANDO_HUMANO, STATUS.ASSUMIDO, STATUS.RESOLVIDO];
+  let resumo = "";
+  let recentes = "";
 
-  $("#resumoStatus").innerHTML = ordem
-    .map((status) => {
-      const qtd = atendimentos.filter((a) => a.status === status).length;
-      return `
+  // Conta os atendimentos de cada status para preencher a barra.
+  for (const status of ordem) {
+    const quantidade = filtrarAtendimentos(atendimentos, status).length;
+    const percentual = calcularPercentual(quantidade, atendimentos.length);
+    resumo += `
         <li>
           <span>${ROTULO_STATUS[status]}</span>
-          <strong>${qtd}</strong>
-          <div class="barra-progresso barra-${status}"><span class="barra-preenchida" style="width:${(qtd / total) * 100}%"></span></div>
+          <strong>${quantidade}</strong>
+          <div class="progress progress--${status}"><span style="--valor:${percentual}%"></span></div>
         </li>`;
-    })
-    .join("");
+  }
 
-  $("#listaRecentes").innerHTML = atendimentos
-    .slice(0, 4)
-    .map((a) => {
-      const ultima = a.mensagens.at(-1);
-      return `
+  // Cada conversa recente tem um link direto para a tela do WhatsApp.
+  for (const atendimento of atendimentos.slice(0, 4)) {
+    const ultima = atendimento.mensagens[atendimento.mensagens.length - 1];
+    recentes += `
         <li>
-          <a href="#whatsapp/${a.id}">
-            <span class="avatar avatar-pequeno avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
+          <a href="#whatsapp/${atendimento.id}">
+            <span class="avatar avatar--sm" data-cor="${corAvatar(atendimento.cliente)}">${iniciais(atendimento.cliente)}</span>
             <div>
-              <strong>${escapar(a.cliente)}</strong>
+              <strong>${escapar(atendimento.cliente)}</strong>
               <p>${escapar(ultima?.texto ?? "Novo atendimento")}</p>
             </div>
-            ${badgeStatus(a.status)}
+            ${badgeStatus(atendimento.status)}
           </a>
         </li>`;
-    })
-    .join("");
+  }
+  $("#resumoStatus").innerHTML = resumo;
+  if (!recentes) recentes = '<li class="empty-state">Nenhum atendimento ainda.</li>';
+  $("#listaRecentes").innerHTML = recentes;
 }

@@ -5,9 +5,9 @@
    ========================================================================== */
 
 import { criarAtendimento, alterarStatusAtendimento } from "./atendimentos.js";
-import { atendimentosDemo } from "./dados-demo.js";
 
-let atendimentos = structuredClone(atendimentosDemo);
+// A lista começa vazia e recebe os atendimentos criados na tela.
+let atendimentos = [];
 const ouvintes = new Set();
 
 function notificar() {
