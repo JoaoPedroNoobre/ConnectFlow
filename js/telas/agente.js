@@ -29,7 +29,7 @@ export function iniciarAgente() {
     campo.value = "";
   });
   $("#sugestoesTeste").addEventListener("click", (e) => {
-    if (e.target.matches(".quick-btn")) perguntar(e.target.textContent);
+    if (e.target.matches(".botao-acao-rapida")) perguntar(e.target.textContent);
   });
   $('[data-action="reiniciar-teste"]').addEventListener("click", reiniciarTeste);
 
@@ -64,7 +64,7 @@ function definirIAAtiva(ativa) {
 function atualizarIndicadoresIA() {
   const ativa = iaAtiva();
   $$("[data-ia-ativa]").forEach((c) => { c.checked = ativa; });
-  $$(".ai-pill").forEach((p) => p.classList.toggle("is-off", !ativa));
+  $$(".botao-ia-ativa").forEach((p) => p.classList.toggle("desligado", !ativa));
   $$("[data-ia-rotulo]").forEach((r) => { r.textContent = ativa ? "IA Ativa" : "IA pausada"; });
   const botao = $('[data-action="alternar-ia"]');
   botao.querySelector("[data-ia-botao]").textContent = ativa ? "Pausar IA" : "Retomar IA";
@@ -78,7 +78,7 @@ function configurarContador() {
   const contador = $("#contadorInstrucoes");
   const atualizar = () => {
     contador.textContent = `${campo.value.length}/${campo.maxLength}`;
-    contador.classList.toggle("is-warning", campo.value.length > campo.maxLength * 0.9);
+    contador.classList.toggle("alerta", campo.value.length > campo.maxLength * 0.9);
   };
   campo.addEventListener("input", atualizar);
   atualizar();
@@ -176,11 +176,11 @@ function adicionarMensagemTeste(autor, texto) {
   const area = $("#mensagensTeste");
   const el = document.createElement(autor === "sistema" ? "p" : "div");
   if (autor === "sistema") {
-    el.className = "msg-system";
+    el.className = "mensagem-sistema";
     el.textContent = texto;
   } else {
-    el.className = autor === "ia" ? "msg msg--ia" : "msg msg--cliente";
-    el.innerHTML = `${autor === "ia" ? `<span class="msg__author">${icone("i-sparkles")}${escapar(lerFormulario($("#formAgente")).nome || "IA")}</span>` : ""}
+    el.className = autor === "ia" ? "mensagem mensagem-ia" : "mensagem mensagem-cliente-previa";
+    el.innerHTML = `${autor === "ia" ? `<span class="mensagem-autor">${icone("i-sparkles")}${escapar(lerFormulario($("#formAgente")).nome || "IA")}</span>` : ""}
       <p>${escapar(texto)}</p><time>${horaAtual()}</time>`;
   }
   area.append(el);

@@ -10,66 +10,70 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <!-- CSS comum a todas as telas (cores, fontes, menu, cabeçalho, botões) -->
+  <link rel="stylesheet" href="css/comum.css">
+  <!-- CSS de cada tela (o site é uma página só, então as 4 ficam ligadas aqui) -->
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/whatsapp.css">
+  <link rel="stylesheet" href="css/agente.css">
+  <link rel="stylesheet" href="css/configuracoes.css">
 </head>
 <body>
-  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+  <a class="link-pular-conteudo" href="#conteudo">Pular para o conteúdo</a>
 
-  <div class="app">
+  <div class="aplicacao">
     <!-- ============ MENU LATERAL ============ -->
-    <aside class="sidebar" id="sidebar" aria-label="Menu principal">
-      <div class="sidebar__brand">
+    <aside class="menu-lateral" id="sidebar" aria-label="Menu principal">
+      <div class="menu-marca">
         <img src="assets/logo.svg" alt="" width="34" height="34">
         <span>Connect<strong>Flow</strong></span>
-        <button class="icon-btn sidebar__close" type="button" data-action="fechar-menu" aria-label="Fechar menu">
-          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+        <button class="botao-icone botao-fechar-menu" type="button" data-action="fechar-menu" aria-label="Fechar menu">
+          <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
         </button>
       </div>
 
-      <nav class="sidebar__nav">
+      <nav class="menu-navegacao">
         <ul>
-          <li><a href="#dashboard" class="nav-link" data-view="dashboard">
-            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-dashboard"/></svg>Dashboard</a></li>
-          <li><a href="#whatsapp" class="nav-link" data-view="whatsapp">
-            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>WhatsApp
-            <span class="nav-link__badge" id="badgeAguardando" hidden></span></a></li>
-          <li><a href="#agente" class="nav-link" data-view="agente">
-            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-bot"/></svg>Agente de IA</a></li>
-          <li><a href="#instagram" class="nav-link" data-view="instagram">
-            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-instagram"/></svg>Instagram Studio</a></li>
-          <li><a href="#configuracoes" class="nav-link" data-view="configuracoes">
-            <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-settings"/></svg>Configurações</a></li>
+          <li><a href="#dashboard" class="link-menu" data-view="dashboard">
+            <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-dashboard"/></svg>Dashboard</a></li>
+          <li><a href="#whatsapp" class="link-menu" data-view="whatsapp">
+            <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>WhatsApp
+            <span class="contador-menu" id="badgeAguardando" hidden></span></a></li>
+          <li><a href="#agente" class="link-menu" data-view="agente">
+            <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-bot"/></svg>Agente de IA</a></li>
+          <li><a href="#configuracoes" class="link-menu" data-view="configuracoes">
+            <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-settings"/></svg>Configurações</a></li>
         </ul>
       </nav>
 
-      <a class="company-card" href="#configuracoes" title="Dados da empresa">
-        <span class="company-card__logo" id="empresaAvatar" aria-hidden="true">E</span>
-        <span class="company-card__info">
+      <a class="cartao-empresa" href="#configuracoes" title="Dados da empresa">
+        <span class="cartao-empresa-logo" id="empresaAvatar" aria-hidden="true">E</span>
+        <span class="cartao-empresa-info">
           <strong id="empresaNomeMenu">Empresa Exemplo</strong>
           <small>Dados demonstrativos</small>
         </span>
-        <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-chevron-right"/></svg>
+        <svg class="icone cartao-empresa-seta" aria-hidden="true"><use href="assets/icons.svg#i-chevron-right"/></svg>
       </a>
     </aside>
-    <div class="backdrop" data-action="fechar-menu" hidden></div>
+    <div class="fundo-escuro" data-action="fechar-menu" hidden></div>
 
     <!-- ============ ÁREA PRINCIPAL ============ -->
-    <div class="main">
-      <header class="topbar">
-        <button class="icon-btn topbar__menu" type="button" data-action="abrir-menu" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
-          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-menu"/></svg>
+    <div class="area-principal">
+      <header class="cabecalho">
+        <button class="botao-icone botao-abrir-menu" type="button" data-action="abrir-menu" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false">
+          <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-menu"/></svg>
         </button>
-        <div class="topbar__title">
+        <div class="cabecalho-titulo">
           <h1 id="tituloPagina">Dashboard</h1>
           <p id="subtituloPagina">Visão geral do seu atendimento e marketing</p>
         </div>
 
         <!-- Ações do topo: cada grupo aparece apenas na sua tela -->
-        <div class="topbar__actions">
-          <div class="action-group" data-acoes="dashboard">
-            <label class="select-pill">
-              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-calendar"/></svg>
-              <span class="sr-only">Período</span>
+        <div class="cabecalho-acoes">
+          <div class="grupo-acoes" data-acoes="dashboard">
+            <label class="seletor-periodo">
+              <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-calendar"/></svg>
+              <span class="texto-leitor-tela">Período</span>
               <select id="filtroPeriodo">
                 <option value="hoje">Hoje</option>
                 <option value="semana" selected>Últimos 7 dias</option>
@@ -78,92 +82,86 @@
             </label>
           </div>
 
-          <div class="action-group" data-acoes="whatsapp" hidden>
-            <label class="ai-pill">
-              <span class="switch switch--sm"><input type="checkbox" data-ia-ativa checked><span class="sr-only">IA ativa</span></span>
-              <span data-ia-rotulo>IA Ativa</span>
+          <div class="grupo-acoes" data-acoes="whatsapp" hidden>
+            <label class="botao-ia-ativa">
+              <span class="interruptor"><input type="checkbox" data-ia-ativa checked><span class="interruptor-trilho"><span class="interruptor-bolinha"></span></span><span class="texto-leitor-tela">IA ativa</span></span>
+              <span class="texto-ia" data-ia-rotulo>IA Ativa</span>
             </label>
-            <button class="btn btn--outline btn--sm" type="button" data-action="alternar-ia">
-              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-pause"/></svg><span data-ia-botao>Pausar IA</span>
+            <button class="botao botao-contorno botao-pequeno" type="button" data-action="alternar-ia">
+              <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-pause"/></svg><span data-ia-botao>Pausar IA</span>
             </button>
           </div>
 
-          <div class="action-group" data-acoes="agente" hidden>
-            <label class="ai-pill">
-              <span class="switch switch--sm"><input type="checkbox" name="ativo" form="formAgente" data-ia-ativa checked><span class="sr-only">IA ativa</span></span>
-              <span data-ia-rotulo>IA Ativa</span>
+          <div class="grupo-acoes" data-acoes="agente" hidden>
+            <label class="botao-ia-ativa">
+              <span class="interruptor"><input type="checkbox" name="ativo" form="formAgente" data-ia-ativa checked><span class="interruptor-trilho"><span class="interruptor-bolinha"></span></span><span class="texto-leitor-tela">IA ativa</span></span>
+              <span class="texto-ia" data-ia-rotulo>IA Ativa</span>
             </label>
           </div>
 
-          <div class="action-group" data-acoes="instagram" hidden>
-            <button class="btn btn--primary btn--sm" type="button" data-action="novo-post">
-              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg><span>Novo Post</span>
-            </button>
-          </div>
-
-          <div class="action-group" data-acoes="configuracoes" hidden>
-            <button class="btn btn--success btn--sm" type="button" data-action="salvar-configuracoes">
-              <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-save"/></svg><span>Salvar alterações</span>
+          <div class="grupo-acoes" data-acoes="configuracoes" hidden>
+            <button class="botao botao-verde botao-pequeno" type="button" data-action="salvar-configuracoes">
+              <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-save"/></svg><span>Salvar alterações</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main id="conteudo" class="content" tabindex="-1">
+      <main id="conteudo" class="conteudo" tabindex="-1">
 
         <!-- ================= 1. DASHBOARD ================= -->
-        <section class="view" id="view-dashboard" data-view="dashboard">
-          <div class="kpi-grid">
-            <article class="kpi">
-              <p class="kpi__label">Clientes (total)</p>
-              <div class="kpi__row"><p class="kpi__value" id="kpiClientes">—</p><span class="trend trend--up" id="kpiClientesTend"></span></div>
+        <section class="tela" id="view-dashboard" data-view="dashboard">
+          <div class="grade-indicadores">
+            <article class="indicador indicador-destaque">
+              <p class="indicador-nome">Clientes (total)</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiClientes">—</p><span class="variacao variacao-positiva" id="kpiClientesTend"></span></div>
             </article>
-            <article class="kpi">
-              <p class="kpi__label">Finalizados pela IA</p>
-              <div class="kpi__row"><p class="kpi__value" id="kpiFinalizados">—</p><span class="trend trend--up" id="kpiFinalizadosPct"></span></div>
+            <article class="indicador">
+              <p class="indicador-nome">Finalizados pela IA</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiFinalizados">—</p><span class="variacao variacao-positiva" id="kpiFinalizadosPct"></span></div>
             </article>
-            <article class="kpi">
-              <p class="kpi__label">Em tratamento</p>
-              <div class="kpi__row"><p class="kpi__value" id="kpiTratamento">—</p><span class="trend trend--neutral" id="kpiTratamentoPct"></span></div>
+            <article class="indicador">
+              <p class="indicador-nome">Em tratamento</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiTratamento">—</p><span class="variacao variacao-neutra" id="kpiTratamentoPct"></span></div>
             </article>
-            <article class="kpi">
-              <p class="kpi__label">Não concluídos</p>
-              <div class="kpi__row"><p class="kpi__value" id="kpiNaoConcluidos">—</p><span class="trend trend--down" id="kpiNaoConcluidosPct"></span></div>
+            <article class="indicador">
+              <p class="indicador-nome">Não concluídos</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiNaoConcluidos">—</p><span class="variacao variacao-negativa" id="kpiNaoConcluidosPct"></span></div>
             </article>
-            <article class="kpi">
-              <p class="kpi__label">Intervenção humana</p>
-              <div class="kpi__row"><p class="kpi__value" id="kpiIntervencao">—</p><span class="trend trend--warn" id="kpiIntervencaoPct"></span></div>
+            <article class="indicador">
+              <p class="indicador-nome">Intervenção humana</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiIntervencao">—</p><span class="variacao variacao-alerta" id="kpiIntervencaoPct"></span></div>
             </article>
           </div>
 
-          <div class="dash-grid">
-            <article class="card">
-              <h2 class="card__title">Clientes por origem</h2>
-              <div class="donut-wrap">
-                <div class="donut" id="graficoOrigem" role="img" aria-label="Distribuição de clientes por origem">
-                  <div class="donut__center"><strong id="donutTotal">—</strong><small>Clientes</small></div>
+          <div class="grade-painel">
+            <article class="cartao">
+              <h2 class="cartao-titulo">Clientes por origem</h2>
+              <div class="grafico-rosca-area">
+                <div class="grafico-rosca" id="graficoOrigem" role="img" aria-label="Distribuição de clientes por origem">
+                  <div class="grafico-rosca-centro"><strong id="donutTotal">—</strong><small>Clientes</small></div>
                 </div>
-                <ul class="donut-legend" id="legendaOrigem"></ul>
+                <ul class="legenda-rosca" id="legendaOrigem"></ul>
               </div>
             </article>
 
-            <article class="card">
-              <h2 class="card__title">Conversões (vendas)</h2>
-              <div class="sales-head">
-                <strong class="sales-head__value" id="valorVendas">—</strong>
-                <span class="trend trend--up" id="tendenciaVendas"></span>
+            <article class="cartao">
+              <h2 class="cartao-titulo">Conversões (vendas)</h2>
+              <div class="vendas-topo">
+                <strong class="vendas-valor" id="valorVendas">—</strong>
+                <span class="variacao variacao-positiva" id="tendenciaVendas"></span>
               </div>
-              <svg class="line-chart" id="graficoVendas" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="Evolução das vendas no período"></svg>
+              <svg class="grafico-linha" id="graficoVendas" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="Evolução das vendas no período"></svg>
             </article>
           </div>
 
-          <div class="dash-grid dash-grid--3">
-            <article class="card">
-              <h2 class="card__title">Desempenho da IA</h2>
-              <ul class="metric-list">
+          <div class="grade-painel grade-painel-tres">
+            <article class="cartao">
+              <h2 class="cartao-titulo">Desempenho da IA</h2>
+              <ul class="lista-metricas">
                 <li>
-                  <div class="metric-list__row"><span>Taxa de resolução</span><strong id="metricaResolucao">—</strong></div>
-                  <div class="progress"><span id="barraResolucao"></span></div>
+                  <div class="metrica-linha"><span>Taxa de resolução</span><strong id="metricaResolucao">—</strong></div>
+                  <div class="barra-progresso"><span class="barra-preenchida" id="barraResolucao"></span></div>
                 </li>
                 <li>
                   <div class="metric-list__row"><span>Satisfação dos clientes</span><strong>0 / 5</strong></div>
@@ -176,65 +174,65 @@
               </ul>
             </article>
 
-            <article class="card">
-              <h2 class="card__title">Status dos atendimentos</h2>
-              <ul class="status-summary" id="resumoStatus"></ul>
+            <article class="cartao">
+              <h2 class="cartao-titulo">Status dos atendimentos</h2>
+              <ul class="resumo-status" id="resumoStatus"></ul>
             </article>
 
-            <article class="card">
-              <header class="card__header">
-                <h2 class="card__title">Atendimentos recentes</h2>
-                <a href="#whatsapp" class="link-more">Ver todos</a>
+            <article class="cartao cartao-recentes">
+              <header class="cartao-topo">
+                <h2 class="cartao-titulo">Atendimentos recentes</h2>
+                <a href="#whatsapp" class="link-ver-todos">Ver todos</a>
               </header>
-              <ul class="recent-list" id="listaRecentes"></ul>
+              <ul class="lista-recentes" id="listaRecentes"></ul>
             </article>
           </div>
         </section>
 
         <!-- ================= 2. WHATSAPP INTEGRADO ================= -->
-        <section class="view" id="view-whatsapp" data-view="whatsapp" hidden>
-          <div class="chat-layout" id="chatLayout" data-painel="lista">
-            <div class="card chat-list">
-              <div class="chat-list__top">
-                <div class="chat-list__search">
-                  <label class="search">
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>
-                    <span class="sr-only">Buscar conversas</span>
+        <section class="tela" id="view-whatsapp" data-view="whatsapp" hidden>
+          <div class="layout-conversas mostrando-lista" id="chatLayout">
+            <div class="cartao coluna-conversas">
+              <div class="coluna-conversas-topo">
+                <div class="linha-busca">
+                  <label class="busca">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-search"/></svg>
+                    <span class="texto-leitor-tela">Buscar conversas</span>
                     <input type="search" id="buscaCliente" placeholder="Buscar conversas..." autocomplete="off">
                   </label>
-                  <button class="icon-btn icon-btn--primary" type="button" data-action="novo-atendimento" aria-label="Novo atendimento" title="Novo atendimento">
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>
+                  <button class="botao-icone botao-icone-roxo" type="button" data-action="novo-atendimento" aria-label="Novo atendimento" title="Novo atendimento">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-plus"/></svg>
                   </button>
                 </div>
-                <div class="pills" id="filtrosStatus" role="tablist" aria-label="Filtrar por status"></div>
+                <div class="grupo-filtros" id="filtrosStatus" role="tablist" aria-label="Filtrar por status"></div>
               </div>
-              <ul class="conversation-list" id="listaConversas" aria-label="Lista de conversas"></ul>
+              <ul class="lista-conversas" id="listaConversas" aria-label="Lista de conversas"></ul>
             </div>
 
-            <div class="card chat-window" id="janelaChat" aria-live="polite"></div>
+            <div class="cartao janela-conversa" id="janelaChat" aria-live="polite"></div>
 
-            <aside class="card chat-info" id="infoCliente" aria-label="Informações do cliente"></aside>
+            <aside class="cartao painel-cliente" id="infoCliente" aria-label="Informações do cliente"></aside>
           </div>
         </section>
 
         <!-- ================= 3. AGENTE DE IA ================= -->
-        <section class="view" id="view-agente" data-view="agente" hidden>
-          <div class="agent-grid">
-            <form class="card agent-config" id="formAgente" data-persistir="cf-agente" novalidate>
-              <div class="tabs" role="tablist" aria-label="Configuração do agente">
-                <button type="button" class="tabs__tab is-active" role="tab" id="tab-ag-geral" aria-controls="painel-ag-geral" aria-selected="true">Geral</button>
-                <button type="button" class="tabs__tab" role="tab" id="tab-ag-catalogo" aria-controls="painel-ag-catalogo" aria-selected="false" tabindex="-1">Catálogo</button>
-                <button type="button" class="tabs__tab" role="tab" id="tab-ag-respostas" aria-controls="painel-ag-respostas" aria-selected="false" tabindex="-1">Respostas</button>
-                <button type="button" class="tabs__tab" role="tab" id="tab-ag-comportamento" aria-controls="painel-ag-comportamento" aria-selected="false" tabindex="-1">Comportamento</button>
+        <section class="tela" id="view-agente" data-view="agente" hidden>
+          <div class="grade-agente">
+            <form class="cartao configuracao-agente" id="formAgente" data-persistir="cf-agente" novalidate>
+              <div class="abas" role="tablist" aria-label="Configuração do agente">
+                <button type="button" class="aba ativo" role="tab" id="tab-ag-geral" aria-controls="painel-ag-geral" aria-selected="true">Geral</button>
+                <button type="button" class="aba" role="tab" id="tab-ag-catalogo" aria-controls="painel-ag-catalogo" aria-selected="false" tabindex="-1">Catálogo</button>
+                <button type="button" class="aba" role="tab" id="tab-ag-respostas" aria-controls="painel-ag-respostas" aria-selected="false" tabindex="-1">Respostas</button>
+                <button type="button" class="aba" role="tab" id="tab-ag-comportamento" aria-controls="painel-ag-comportamento" aria-selected="false" tabindex="-1">Comportamento</button>
               </div>
 
               <!-- Geral -->
-              <div class="tab-panel" id="painel-ag-geral" role="tabpanel" aria-labelledby="tab-ag-geral">
-                <div class="field">
+              <div class="painel-aba" id="painel-ag-geral" role="tabpanel" aria-labelledby="tab-ag-geral">
+                <div class="campo">
                   <label for="agNome">Nome do agente</label>
                   <input id="agNome" name="nome" type="text" value="Assistente ConnectFlow" required maxlength="40">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="agTom">Personalidade</label>
                   <select id="agTom" name="tom">
                     <option value="consultivo" selected>Consultivo e amigável</option>
@@ -243,12 +241,12 @@
                     <option value="descontraido">Descontraído</option>
                   </select>
                 </div>
-                <div class="field">
-                  <div class="field__label-row">
+                <div class="campo">
+                  <div class="campo-rotulo-linha">
                     <label for="agInstrucoes">Instruções principais</label>
                   </div>
                   <textarea id="agInstrucoes" name="instrucoes" rows="5" maxlength="500">Você é o assistente virtual da empresa. Responda dúvidas sobre produtos, serviços, preços e prazos, ajude o cliente a escolher e encaminhe para um atendente quando necessário.</textarea>
-                  <small class="counter" id="contadorInstrucoes" aria-live="polite">0/500</small>
+                  <small class="contador-caracteres" id="contadorInstrucoes" aria-live="polite">0/500</small>
                 </div>
               </div>
 
@@ -260,11 +258,11 @@
                     <label for="catNome">Produto ou serviço</label>
                     <input id="catNome" type="text" placeholder="Ex.: Bolo de cenoura" disabled>
                   </div>
-                  <div class="field">
+                  <div class="campo">
                     <label for="catCategoria">Categoria</label>
                     <input id="catCategoria" type="text" placeholder="Ex.: Bolos" disabled>
                   </div>
-                  <div class="field">
+                  <div class="campo">
                     <label for="catPreco">Preço (R$)</label>
                     <input id="catPreco" type="number" min="0" step="0.01" placeholder="0,00" disabled>
                   </div>
@@ -277,7 +275,7 @@
                 <div class="table-wrap">
                   <table class="table">
                     <thead>
-                      <tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col" class="num">Preço</th><th scope="col"><span class="sr-only">Ações</span></th></tr>
+                      <tr><th scope="col">Item</th><th scope="col">Categoria</th><th scope="col" class="coluna-numero">Preço</th><th scope="col"><span class="texto-leitor-tela">Ações</span></th></tr>
                     </thead>
                     <tbody id="tabelaCatalogo"></tbody>
                   </table>
@@ -285,87 +283,91 @@
               </div>
 
               <!-- Respostas -->
-              <div class="tab-panel" id="painel-ag-respostas" role="tabpanel" aria-labelledby="tab-ag-respostas" hidden>
-                <div class="field">
+              <div class="painel-aba" id="painel-ag-respostas" role="tabpanel" aria-labelledby="tab-ag-respostas" hidden>
+                <div class="campo">
                   <label for="agBoasVindas">Mensagem de boas-vindas</label>
                   <textarea id="agBoasVindas" name="boasVindas" rows="3" maxlength="300">Olá! 👋 Sou o assistente da sua empresa. Como posso te ajudar hoje?</textarea>
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="agTransferencia">Mensagem ao transferir para um atendente</label>
                   <textarea id="agTransferencia" name="msgTransferencia" rows="2" maxlength="300">Vou chamar um atendente para continuar o seu atendimento. Só um instante!</textarea>
                 </div>
               </div>
 
               <!-- Comportamento -->
-              <div class="tab-panel" id="painel-ag-comportamento" role="tabpanel" aria-labelledby="tab-ag-comportamento" hidden>
-                <h3 class="section-title">Habilidades</h3>
-                <div class="skill-grid">
-                  <label class="skill">
+              <div class="painel-aba" id="painel-ag-comportamento" role="tabpanel" aria-labelledby="tab-ag-comportamento" hidden>
+                <h3 class="titulo-secao">Habilidades</h3>
+                <div class="grade-habilidades">
+                  <label class="habilidade">
                     <input type="checkbox" name="habDuvidas" checked>
-                    <span class="skill__box">
-                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-message"/></svg>
+                    <span class="habilidade-caixa">
+                      <span class="habilidade-marcador"></span>
+                      <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-message"/></svg>
                       <strong>Responder dúvidas</strong>
                       <small>Horários, endereço e perguntas frequentes.</small>
                     </span>
                   </label>
-                  <label class="skill">
+                  <label class="habilidade">
                     <input type="checkbox" name="habCatalogo" checked>
-                    <span class="skill__box">
-                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-package"/></svg>
+                    <span class="habilidade-caixa">
+                      <span class="habilidade-marcador"></span>
+                      <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-package"/></svg>
                       <strong>Consultar catálogo</strong>
                       <small>Busca itens do catálogo cadastrado.</small>
                     </span>
                   </label>
-                  <label class="skill">
+                  <label class="habilidade">
                     <input type="checkbox" name="habPrecos" checked>
-                    <span class="skill__box">
-                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-trending"/></svg>
+                    <span class="habilidade-caixa">
+                      <span class="habilidade-marcador"></span>
+                      <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-trending"/></svg>
                       <strong>Informar preços</strong>
                       <small>Responde valores de produtos e serviços.</small>
                     </span>
                   </label>
-                  <label class="skill">
+                  <label class="habilidade">
                     <input type="checkbox" name="habApresentar" checked>
-                    <span class="skill__box">
-                      <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-image"/></svg>
+                    <span class="habilidade-caixa">
+                      <span class="habilidade-marcador"></span>
+                      <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-image"/></svg>
                       <strong>Apresentar produtos</strong>
                       <small>Sugere itens relacionados ao interesse.</small>
                     </span>
                   </label>
                 </div>
 
-                <h3 class="section-title">Intervenção humana</h3>
-                <p class="panel-hint">A conversa muda para <em>Aguardando humano</em> quando:</p>
-                <div class="check-list">
-                  <label class="check"><input type="checkbox" name="transfPedido" checked><span>O cliente pedir para falar com um atendente</span></label>
-                  <label class="check"><input type="checkbox" name="transfSemResposta" checked><span>A IA não encontrar uma resposta adequada</span></label>
-                  <label class="check"><input type="checkbox" name="transfReclamacao" checked><span>For identificada uma reclamação</span></label>
-                  <label class="check"><input type="checkbox" name="transfNegociacao"><span>O cliente pedir desconto, negociação ou agendamento</span></label>
+                <h3 class="titulo-secao titulo-secao-espacado">Intervenção humana</h3>
+                <p class="texto-dica">A conversa muda para <em>Aguardando humano</em> quando:</p>
+                <div class="lista-opcoes">
+                  <label class="opcao-marcar"><input type="checkbox" name="transfPedido" checked><span>O cliente pedir para falar com um atendente</span></label>
+                  <label class="opcao-marcar"><input type="checkbox" name="transfSemResposta" checked><span>A IA não encontrar uma resposta adequada</span></label>
+                  <label class="opcao-marcar"><input type="checkbox" name="transfReclamacao" checked><span>For identificada uma reclamação</span></label>
+                  <label class="opcao-marcar"><input type="checkbox" name="transfNegociacao"><span>O cliente pedir desconto, negociação ou agendamento</span></label>
                 </div>
               </div>
 
-              <button class="btn btn--primary btn--block agent-config__save" type="submit">Salvar alterações</button>
+              <button class="botao botao-roxo botao-largura-total botao-salvar-agente" type="submit">Salvar alterações</button>
             </form>
 
             <!-- Prévia do agente (simulação local) -->
-            <aside class="card agent-preview" aria-labelledby="tituloPrevia">
-              <header class="agent-preview__header">
-                <h2 class="card__title" id="tituloPrevia">Prévia do agente</h2>
-                <button class="icon-btn" type="button" data-action="reiniciar-teste" aria-label="Reiniciar conversa de teste" title="Reiniciar conversa">
-                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-trash"/></svg>
+            <aside class="cartao previa-agente" aria-labelledby="tituloPrevia">
+              <header class="previa-agente-topo">
+                <h2 class="cartao-titulo" id="tituloPrevia">Prévia do agente</h2>
+                <button class="botao-icone" type="button" data-action="reiniciar-teste" aria-label="Reiniciar conversa de teste" title="Reiniciar conversa">
+                  <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-trash"/></svg>
                 </button>
               </header>
-              <div class="messages messages--preview" id="mensagensTeste"></div>
-              <div class="quick-actions" id="sugestoesTeste">
-                <button type="button" class="quick-btn">Ver catálogo</button>
-                <button type="button" class="quick-btn">Consultar preços</button>
-                <button type="button" class="quick-btn">Agendar atendimento</button>
+              <div class="area-mensagens area-mensagens-previa" id="mensagensTeste"></div>
+              <div class="acoes-rapidas" id="sugestoesTeste">
+                <button type="button" class="botao-acao-rapida">Ver catálogo</button>
+                <button type="button" class="botao-acao-rapida">Consultar preços</button>
+                <button type="button" class="botao-acao-rapida">Agendar atendimento</button>
               </div>
-              <form class="composer" id="formTeste">
-                <label class="sr-only" for="entradaTeste">Mensagem de teste</label>
+              <form class="caixa-digitar" id="formTeste">
+                <label class="texto-leitor-tela" for="entradaTeste">Mensagem de teste</label>
                 <input id="entradaTeste" type="text" placeholder="Pergunte algo como um cliente..." autocomplete="off">
-                <button class="btn btn--primary btn--icon" type="submit" aria-label="Enviar">
-                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-send"/></svg>
+                <button class="botao botao-roxo botao-so-icone" type="submit" aria-label="Enviar">
+                  <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-send"/></svg>
                 </button>
               </form>
               <p class="agent-preview__note">A prévia usa o Gemini e o catálogo da empresa.</p>
@@ -462,27 +464,27 @@
           </div>
         </section>
 
-        <!-- ================= 5. CONFIGURAÇÕES ================= -->
-        <section class="view" id="view-configuracoes" data-view="configuracoes" hidden>
-          <div class="card settings">
-            <div class="tabs" role="tablist" aria-label="Seções de configuração">
-              <button type="button" class="tabs__tab is-active" role="tab" id="tab-empresa" aria-controls="painel-empresa" aria-selected="true">Empresa</button>
-              <button type="button" class="tabs__tab" role="tab" id="tab-redes" aria-controls="painel-redes" aria-selected="false" tabindex="-1">Redes sociais</button>
-              <button type="button" class="tabs__tab" role="tab" id="tab-integracoes" aria-controls="painel-integracoes" aria-selected="false" tabindex="-1">Integrações</button>
+        <!-- ================= 4. CONFIGURAÇÕES ================= -->
+        <section class="tela" id="view-configuracoes" data-view="configuracoes" hidden>
+          <div class="cartao cartao-configuracoes">
+            <div class="abas" role="tablist" aria-label="Seções de configuração">
+              <button type="button" class="aba ativo" role="tab" id="tab-empresa" aria-controls="painel-empresa" aria-selected="true">Empresa</button>
+              <button type="button" class="aba" role="tab" id="tab-redes" aria-controls="painel-redes" aria-selected="false" tabindex="-1">Redes sociais</button>
+              <button type="button" class="aba" role="tab" id="tab-integracoes" aria-controls="painel-integracoes" aria-selected="false" tabindex="-1">Integrações</button>
             </div>
 
             <!-- Empresa -->
-            <form class="tab-panel settings__company" id="painel-empresa" role="tabpanel" aria-labelledby="tab-empresa" data-persistir="cf-empresa" novalidate>
-              <div class="form-grid">
-                <div class="field field--full">
+            <form class="painel-aba painel-empresa-grade" id="painel-empresa" role="tabpanel" aria-labelledby="tab-empresa" data-persistir="cf-empresa" novalidate>
+              <div class="grade-formulario">
+                <div class="campo campo-largura-total">
                   <label for="cfgNome">Nome da empresa</label>
                   <input id="cfgNome" name="nome" type="text" value="Empresa Exemplo" required>
                 </div>
-                <div class="field field--full">
+                <div class="campo campo-largura-total">
                   <label for="cfgDescricao">Descrição</label>
                   <textarea id="cfgDescricao" name="descricao" rows="3" maxlength="300">Especializada em confeitaria artesanal e atendimento personalizado.</textarea>
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgSegmento">Segmento</label>
                   <select id="cfgSegmento" name="segmento">
                     <option>Alimentação</option>
@@ -493,88 +495,88 @@
                     <option>Outro</option>
                   </select>
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgCnpj">CNPJ</label>
                   <input id="cfgCnpj" name="cnpj" type="text" inputmode="numeric" placeholder="00.000.000/0000-00">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgEmail">E-mail de contato</label>
                   <input id="cfgEmail" name="email" type="email" placeholder="contato@empresa.com.br">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgTelefone">Telefone</label>
                   <input id="cfgTelefone" name="telefone" type="tel" placeholder="(83) 3333-0000">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgHorario">Horário de atendimento</label>
                   <input id="cfgHorario" name="horario" type="text" value="Seg. a sáb., 8h às 18h">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgEndereco">Endereço</label>
                   <input id="cfgEndereco" name="endereco" type="text" placeholder="Rua, número, bairro, cidade — UF">
                 </div>
               </div>
 
-              <div class="logo-box">
-                <p class="logo-box__label">Logo da empresa</p>
-                <div class="logo-box__preview" id="logoPreview">
+              <div class="caixa-logo">
+                <p class="caixa-logo-titulo">Logo da empresa</p>
+                <div class="caixa-logo-previa" id="logoPreview">
                   <img src="assets/logo.svg" alt="" width="40" height="40">
                   <strong id="logoNome">Empresa Exemplo</strong>
                 </div>
-                <div class="logo-box__actions">
-                  <label class="btn btn--outline btn--sm btn--block">
-                    <input type="file" id="cfgLogo" accept="image/*" class="sr-only">Alterar imagem
+                <div class="caixa-logo-botoes">
+                  <label class="botao botao-contorno botao-pequeno botao-largura-total">
+                    <input type="file" id="cfgLogo" accept="image/*" class="texto-leitor-tela">Alterar imagem
                   </label>
-                  <button class="btn btn--danger-ghost btn--sm btn--block" type="button" data-action="remover-logo">Remover</button>
+                  <button class="botao botao-remover botao-pequeno botao-largura-total" type="button" data-action="remover-logo">Remover</button>
                 </div>
               </div>
             </form>
 
             <!-- Redes sociais -->
-            <form class="tab-panel" id="painel-redes" role="tabpanel" aria-labelledby="tab-redes" data-persistir="cf-redes" hidden novalidate>
-              <div class="form-grid">
-                <div class="field">
+            <form class="painel-aba" id="painel-redes" role="tabpanel" aria-labelledby="tab-redes" data-persistir="cf-redes" hidden novalidate>
+              <div class="grade-formulario">
+                <div class="campo">
                   <label for="cfgWhatsapp">WhatsApp comercial (com DDI)</label>
-                  <div class="input-icon">
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>
+                  <div class="campo-com-icone">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-whatsapp"/></svg>
                     <input id="cfgWhatsapp" name="whatsapp" type="tel" placeholder="55 83 99999-9999">
                   </div>
-                  <small class="field__hint" id="dicaWhatsapp">Usado para gerar o link de contato wa.me.</small>
+                  <small class="campo-dica" id="dicaWhatsapp">Usado para gerar o link de contato wa.me.</small>
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgInstagram">Usuário do Instagram</label>
-                  <div class="input-icon">
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-instagram"/></svg>
+                  <div class="campo-com-icone">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-instagram"/></svg>
                     <input id="cfgInstagram" name="instagram" type="text" placeholder="@empresaexemplo">
                   </div>
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgMensagemLink">Mensagem inicial do link</label>
                   <input id="cfgMensagemLink" name="mensagemLink" type="text" value="Olá, vim do Instagram!">
                 </div>
-                <div class="field">
+                <div class="campo">
                   <label for="cfgSite">Site</label>
-                  <div class="input-icon">
-                    <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-globe"/></svg>
+                  <div class="campo-com-icone">
+                    <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-globe"/></svg>
                     <input id="cfgSite" name="site" type="url" placeholder="https://">
                   </div>
                 </div>
               </div>
-              <div class="link-preview">
+              <div class="caixa-link-whatsapp">
                 <div>
                   <strong>Link de contato para a bio</strong>
                   <code id="linkWhatsappGerado">Informe o WhatsApp para gerar o link</code>
                 </div>
-                <button class="btn btn--outline btn--sm" type="button" data-action="copiar-link" disabled>
-                  <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-link"/></svg>Copiar
+                <button class="botao botao-contorno botao-pequeno" type="button" data-action="copiar-link" disabled>
+                  <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-link"/></svg>Copiar
                 </button>
               </div>
             </form>
 
             <!-- Integrações -->
-            <div class="tab-panel" id="painel-integracoes" role="tabpanel" aria-labelledby="tab-integracoes" hidden>
-              <p class="panel-hint">As integrações são salvas automaticamente.</p>
-              <div class="integration-grid" id="listaIntegracoes"></div>
+            <div class="painel-aba" id="painel-integracoes" role="tabpanel" aria-labelledby="tab-integracoes" hidden>
+              <p class="texto-dica">As integrações são salvas automaticamente.</p>
+              <div class="grade-integracoes" id="listaIntegracoes"></div>
             </div>
           </div>
         </section>
@@ -583,31 +585,31 @@
   </div>
 
   <!-- Modal: novo atendimento -->
-  <dialog class="modal" id="modalAtendimento" aria-labelledby="tituloModal">
-    <form class="modal__body" id="formAtendimento" novalidate>
-      <header class="modal__header">
+  <dialog class="janela-modal" id="modalAtendimento" aria-labelledby="tituloModal">
+    <form class="janela-modal-corpo" id="formAtendimento" novalidate>
+      <header class="janela-modal-topo">
         <h2 id="tituloModal">Novo atendimento</h2>
-        <button class="icon-btn" type="button" data-action="fechar-modal" aria-label="Fechar">
-          <svg class="icon" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
+        <button class="botao-icone" type="button" data-action="fechar-modal" aria-label="Fechar">
+          <svg class="icone" aria-hidden="true"><use href="assets/icons.svg#i-x"/></svg>
         </button>
       </header>
-      <div class="field">
+      <div class="campo">
         <label for="novoNome">Nome do cliente</label>
         <input id="novoNome" name="nome" type="text" required autocomplete="off">
       </div>
-      <div class="field">
+      <div class="campo">
         <label for="novoTelefone">WhatsApp (com DDI)</label>
         <input id="novoTelefone" name="telefone" type="tel" placeholder="55 83 99999-9999" required>
       </div>
-      <p class="form-error" id="erroAtendimento" role="alert" hidden></p>
-      <div class="form-actions">
-        <button class="btn btn--ghost" type="button" data-action="fechar-modal">Cancelar</button>
-        <button class="btn btn--primary" type="submit">Criar atendimento</button>
+      <p class="mensagem-erro" id="erroAtendimento" role="alert" hidden></p>
+      <div class="acoes-formulario">
+        <button class="botao botao-transparente" type="button" data-action="fechar-modal">Cancelar</button>
+        <button class="botao botao-roxo" type="submit">Criar atendimento</button>
       </div>
     </form>
   </dialog>
 
-  <div class="toast-region" id="toasts" aria-live="polite" aria-atomic="false"></div>
+  <div class="area-avisos" id="toasts" aria-live="polite" aria-atomic="false"></div>
 
   <script type="module" src="js/app.js"></script>
 </body>

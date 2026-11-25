@@ -19,11 +19,14 @@ export function criarAtendimento(id, nomeCliente) {
     throw new Error("ID e nome do cliente são obrigatórios.");
   }
 
-  return {
-    id: id.trim(),
-    cliente: nomeCliente.trim(),
-    status: STATUS.EM_ATENDIMENTO
-  };
+  
+return {
+  id: id.trim(),
+  cliente: nomeCliente.trim(),
+  status: STATUS.EM_ATENDIMENTO,
+  iaAtiva: true
+};
+
 }
 
 /* Filtra atendimentos pelo status informado */
@@ -58,9 +61,42 @@ export function alterarStatusAtendimento(atendimento, novoStatus) {
   }
 
   // Retorna uma cópia do atendimento com o novo status
+ 
+return {
+  ...atendimento,
+  status: novoStatus,
+  iaAtiva: novoStatus === STATUS.EM_ATENDIMENTO
+    ? atendimento.iaAtiva !== false
+    : false
+};
+
+}
+
+
+/* Responsáveis pela resolução do atendimento */
+export const RESPONSAVEIS = Object.freeze({
+  IA: "ia",
+  HUMANO: "humano"
+});
+
+/* Finaliza um atendimento e registra quem resolveu */
+export function finalizarAtendimento(atendimento, responsavel) {
+
+  // Verifica se o responsável informado é válido
+  if (!Object.values(RESPONSAVEIS).includes(responsavel)) {
+    throw new Error("Responsável pelo atendimento inválido.");
+  }
+
+  // Reutiliza a função que altera o status
+  const atualizado = alterarStatusAtendimento(
+    atendimento,
+    STATUS.RESOLVIDO
+  );
+
+  // Retorna o atendimento finalizado
   return {
-    ...atendimento,
-    status: novoStatus
+    ...atualizado,
+    resolvidoPor: responsavel
   };
 }
 

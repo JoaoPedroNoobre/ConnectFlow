@@ -1,7 +1,7 @@
 /* ==========================================================================
-   Tela 5 — Configurações
+   Tela 4 — Configurações
    Dados da empresa (com logo), redes sociais e integrações
-   (WhatsApp, Instagram, IA e n8n).
+   (WhatsApp e Inteligência Artificial).
    ========================================================================== */
 
 import { gerarLinkWhatsApp } from "../whatsapp.js";
@@ -11,10 +11,14 @@ import { $, $$, icone, escapar, toast, lerArmazenado, gravarArmazenado, configur
 const CHAVE_INTEGRACOES = "cf-integracoes";
 const CHAVE_LOGO = "cf-logo";
 const LIMITE_LOGO = 400 * 1024; // 400 KB (fica salvo no localStorage)
-let integracoes = lerArmazenado(CHAVE_INTEGRACOES, integracoesDemo);
+// Lê as integrações salvas no navegador e mantém só as que ainda existem
+// (navegadores antigos podem ter Instagram e n8n salvos, que foram retirados)
+const idsValidos = integracoesDemo.map((i) => i.id);
+let integracoes = lerArmazenado(CHAVE_INTEGRACOES, integracoesDemo)
+  .filter((i) => idsValidos.includes(i.id));
 
 export function iniciarConfiguracoes() {
-  configurarAbas($("#view-configuracoes .settings"));
+  configurarAbas($("#view-configuracoes .cartao-configuracoes"));
   configurarLinkWhatsApp();
   configurarLogo();
   renderizarIntegracoes();
@@ -63,7 +67,7 @@ function configurarLogo() {
   atualizarLogo();
 }
 
-/* Atualiza a logo no formulário, no menu lateral e na prévia do Instagram */
+/* Atualiza a logo no formulário e no menu lateral */
 export function atualizarLogo() {
   const logo = lerArmazenado(CHAVE_LOGO);
   $("#logoPreview img").src = logo || "assets/logo.svg";
@@ -83,7 +87,7 @@ function configurarLinkWhatsApp() {
     if (!telefone.value.trim()) {
       saida.textContent = "Informe o WhatsApp para gerar o link";
       dica.textContent = "Usado para gerar o link de contato wa.me.";
-      dica.classList.remove("is-error");
+      dica.classList.remove("erro");
       telefone.removeAttribute("aria-invalid");
       copiar.disabled = true;
       return;
@@ -91,13 +95,13 @@ function configurarLinkWhatsApp() {
     try {
       saida.textContent = gerarLinkWhatsApp(telefone.value, mensagem.value);
       dica.textContent = "Número válido.";
-      dica.classList.remove("is-error");
+      dica.classList.remove("erro");
       telefone.removeAttribute("aria-invalid");
       copiar.disabled = false;
     } catch (erro) {
       saida.textContent = "—";
       dica.textContent = erro.message;
-      dica.classList.add("is-error");
+      dica.classList.add("erro");
       telefone.setAttribute("aria-invalid", "true");
       copiar.disabled = true;
     }
@@ -121,17 +125,17 @@ function configurarLinkWhatsApp() {
 function renderizarIntegracoes() {
   $("#listaIntegracoes").innerHTML = integracoes
     .map((i) => `
-      <article class="integration">
-        <div class="integration__head">
-          <span class="integration__logo" style="background:${i.cor}">${icone(i.icone)}</span>
+      <article class="cartao-integracao">
+        <div class="cartao-integracao-topo">
+          <span class="icone-integracao" style="background:${i.cor}">${icone(i.icone)}</span>
           <div>
             <h3>${escapar(i.nome)}</h3>
             <p>${escapar(i.descricao)}</p>
           </div>
         </div>
-        <div class="integration__foot">
-          <span class="integration__state ${i.conectado ? "is-on" : ""}">${i.conectado ? "Conectado" : "Desconectado"}</span>
-          <button type="button" class="btn btn--sm ${i.conectado ? "btn--outline" : "btn--primary"}" data-integracao="${i.id}">
+        <div class="cartao-integracao-rodape">
+          <span class="estado-integracao ${i.conectado ? "conectado" : ""}"><span class="bolinha-estado"></span>${i.conectado ? "Conectado" : "Desconectado"}</span>
+          <button type="button" class="botao botao-pequeno ${i.conectado ? "botao-contorno" : "botao-roxo"}" data-integracao="${i.id}">
             ${i.conectado ? "Desconectar" : "Conectar"}
           </button>
         </div>
