@@ -1,8 +1,6 @@
 ﻿/* ==========================================================================
    Tela 3 — Agente de IA
-   Configuração do assistente virtual (Geral, Catálogo, Respostas e
-   Comportamento) e uma prévia que SIMULA localmente as respostas com base no
-   catálogo. A IA real será conectada via API/n8n pelo backend do projeto.
+   Configuração do assistente virtual, catálogo e prévia com o Gemini.
    ========================================================================== */
 
 import { catalogoDemo } from "../dados-demo.js";
@@ -180,6 +178,37 @@ function reiniciarTeste() {
 }
 
 
+// Consulta o Gemini pelo servidor, usando os dados do Agente de IA.
+export async function consultarGemini(pergunta, signal) {
+  const dadosEmpresa = lerArmazenado("cf-empresa") || {};
+  const empresa = {
+    nome: dadosEmpresa.nome || "Confeitaria ConnectFlow",
+    descricao: dadosEmpresa.descricao || "Confeitaria de bolos e doces.",
+    endereco: dadosEmpresa.endereco || "Não informado",
+    horario: dadosEmpresa.horario || "Não informado"
+  };
+
+  const resposta = await fetch("/api/ia", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      empresa,
+      produtos: catalogo,
+      pergunta,
+      config: lerFormulario($("#formAgente"))
+    }),
+    signal
+  });
+
+  if (!resposta.ok) throw new Error("Erro ao consultar a IA.");
+  const dados = await resposta.json();
+  if (typeof dados.resposta !== "string" || !dados.resposta.trim()) {
+    throw new Error("A IA não retornou uma resposta.");
+  }
+  return dados.resposta;
+}
+
+// Mostra a consulta na prévia sem alterar os atendimentos do WhatsApp.
 async function perguntar(texto) {
   const pergunta = texto.trim();
 
@@ -187,7 +216,6 @@ async function perguntar(texto) {
 
   adicionarMensagemTeste("cliente", pergunta);
 
-  // Verifica se a IA está ativada
   if (!iaAtiva()) {
     adicionarMensagemTeste("sistema", "IA pausada. Aguarde um atendente.");
     return;
@@ -196,42 +224,9 @@ async function perguntar(texto) {
   const digitando = adicionarMensagemTeste("sistema", "digitando…");
 
   try {
-    // Busca as informações da empresa
-    const dadosEmpresa = lerArmazenado("cf-empresa") || {};
-
-    const empresa = {
-      nome: dadosEmpresa.nome || "Confeitaria ConnectFlow",
-      descricao: dadosEmpresa.descricao || "Confeitaria de bolos e doces.",
-      endereco: dadosEmpresa.endereco || "Não informado",
-      horario: dadosEmpresa.horario || "Não informado"
-    };
-
-    // Envia a pergunta ao nosso servidor
-    const resposta = await fetch("/api/ia", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-
-      body: JSON.stringify({
-        empresa: empresa,
-        produtos: catalogo,
-        pergunta: pergunta,
-        config: lerFormulario($("#formAgente"
-        ))
-      })
-
-    });
-
-    if (!resposta.ok) {
-      throw new Error("Erro ao consultar a IA");
-    }
-
-    const dados = await resposta.json();
-
-    adicionarMensagemTeste("ia", dados.resposta);
-
-  } catch (erro) {
+    const resposta = await consultarGemini(pergunta);
+    adicionarMensagemTeste("ia", resposta);
+  } catch {
     adicionarMensagemTeste(
       "sistema",
       "Não foi possível consultar a IA. Tente novamente."
