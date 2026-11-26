@@ -9,16 +9,20 @@ import { gerarLinkWhatsApp } from "../whatsapp.js";
 import { consultarGemini, iaAtiva } from "./agente.js";
 import {
   listarAtendimentos, buscarAtendimento, inscrever,
-  carregarAtendimentos, mudarStatus, adicionarMensagem, novoAtendimento
+  carregarAtendimentos, carregarMensagens, mudarStatus, adicionarMensagem, novoAtendimento
 } from "../estado.js";
 import {
-  $, icone, escapar, iniciais, badgeStatus, horaAtual, formatarTelefone,
+  $, icone, escapar, iniciais, badgeStatus, formatarTelefone,
   toast, lerArmazenado, corAvatar, ROTULO_STATUS, ROTULO_FILTRO
 } from "../ui.js";
 
 const estado = { filtro: "todos", busca: "", selecionadoId: null, carregando: false, erroCarregamento: "" };
 // Guarda a consulta em andamento de cada conversa.
 const consultasIA = new Map();
+const historicosEmLeitura = new Set();
+const errosHistorico = new Map();
+const mensagensEmEnvio = new Set();
+const statusEmAtualizacao = new Set();
 
 const els = {};
 
@@ -100,6 +104,23 @@ export function abrirConversa(id) {
   }
   els.layout.classList.remove("painel-cliente-aberto");
   renderizarTudo();
+  if (estado.selecionadoId) carregarHistorico(estado.selecionadoId);
+}
+
+// Carrega o histórico da conversa selecionada e permite tentar de novo se falhar.
+async function carregarHistorico(id) {
+  if (historicosEmLeitura.has(id)) return;
+  historicosEmLeitura.add(id);
+  errosHistorico.delete(id);
+  renderizarJanela();
+  try {
+    await carregarMensagens(id);
+  } catch (erro) {
+    errosHistorico.set(id, erro.message);
+  } finally {
+    historicosEmLeitura.delete(id);
+    if (estado.selecionadoId === id) renderizarJanela();
+  }
 }
 
 function renderizarTudo() {
@@ -218,13 +239,13 @@ function botoesAcao(status) {
   return porStatus[status];
 }
 
-function rodape(status) {
+function rodape(status, enviando) {
   if (status === STATUS.ASSUMIDO) {
     return `
       <form class="caixa-digitar" data-form="mensagem">
         <label class="texto-leitor-tela" for="campoMensagem">Mensagem</label>
         <input id="campoMensagem" name="mensagem" type="text" placeholder="Digite sua mensagem…" autocomplete="off" required>
-        <button class="botao botao-roxo botao-so-icone" type="submit" aria-label="Enviar mensagem">${icone("i-send")}</button>
+        <button class="botao botao-roxo botao-so-icone" type="submit" aria-label="Enviar mensagem" ${enviando ? "disabled" : ""}>${icone("i-send")}</button>
       </form>`;
   }
   const textos = {
@@ -270,6 +291,16 @@ function renderizarJanela() {
   }
 
   const consultando = consultasIA.has(a.id);
+  const lendoHistorico = historicosEmLeitura.has(a.id);
+  const erroHistorico = errosHistorico.get(a.id);
+  const enviando = mensagensEmEnvio.has(a.id) || statusEmAtualizacao.has(a.id) || lendoHistorico;
+  let historico = a.mensagens.map(renderizarMensagem).join("");
+  if (lendoHistorico) historico += '<p class="msg-system">Carregando mensagens…</p>';
+  if (erroHistorico) {
+    historico += `<p class="msg-system" role="alert">${escapar(erroHistorico)}</p>
+      <button type="button" class="botao botao-contorno botao-pequeno" data-action="recarregar-historico">Tentar carregar histórico</button>`;
+  }
+  if (!historico) historico = '<p class="msg-system">Nenhuma mensagem ainda</p>';
   const link = linkWhatsApp(a.telefone);
   els.janela.dataset.atendimento = a.id;
   els.janela.innerHTML = `
@@ -287,11 +318,11 @@ function renderizarJanela() {
       </div>
     </header>
     <div class="messages" id="listaMensagens">
-      ${a.mensagens.length ? a.mensagens.map(renderizarMensagem).join("") : '<p class="msg-system">Nenhuma mensagem ainda</p>'}
+      ${historico}
       ${consultando ? '<p class="msg-system">Consultando o Gemini…</p>' : ""}
     </div>
-    ${a.status !== STATUS.RESOLVIDO ? formularioSimulacao(consultando) : ""}
-    ${rodape(a.status)}`;
+    ${a.status !== STATUS.RESOLVIDO ? formularioSimulacao(consultando || enviando) : ""}
+    ${rodape(a.status, enviando)}`;
 
   for (const campo of els.janela.querySelectorAll("form.composer input")) {
     const rascunho = campos[campo.id];
@@ -352,25 +383,18 @@ function tratarAcao(e) {
   const botao = e.target.closest("[data-action]");
   if (!botao) return;
   const id = estado.selecionadoId;
-  const hora = horaAtual();
-
   switch (botao.dataset.action) {
     case "assumir":
-      cancelarConsultaIA(id);
-      mudarStatus(id, STATUS.ASSUMIDO, "Atendimento assumido por você", hora);
-      toast("Você assumiu o atendimento. A IA foi pausada nesta conversa.");
-      $("#campoMensagem")?.focus();
+      alterarSituacao(id, STATUS.ASSUMIDO, "Atendimento assumido por você");
       break;
     case "devolver-ia":
-      mudarStatus(id, STATUS.EM_ATENDIMENTO, "Conversa devolvida para a IA", hora);
-      toast(iaAtiva() ? "A IA voltou a conduzir esta conversa." : "Conversa devolvida. A IA continua pausada.");
+      alterarSituacao(id, STATUS.EM_ATENDIMENTO, "Conversa devolvida para a IA");
       break;
     case "resolver":
-      mudarStatus(id, STATUS.RESOLVIDO, "Atendimento marcado como resolvido", hora);
-      toast("Atendimento resolvido.");
+      alterarSituacao(id, STATUS.RESOLVIDO, "Atendimento marcado como resolvido");
       break;
     case "reabrir":
-      mudarStatus(id, STATUS.EM_ATENDIMENTO, "Atendimento reaberto", hora);
+      alterarSituacao(id, STATUS.EM_ATENDIMENTO, "Atendimento reaberto");
       break;
     case "voltar-lista":
       location.hash = "whatsapp";
@@ -387,11 +411,41 @@ function tratarAcao(e) {
     case "recarregar-atendimentos":
       carregarConversas();
       break;
+    case "recarregar-historico":
+      carregarHistorico(id);
+      break;
   }
 }
 
-// Distingue o envio humano da mensagem simulada do cliente.
-function tratarEnvio(e) {
+// Salva primeiro o status. O aviso também precisa ser confirmado pelo banco.
+async function alterarSituacao(id, status, aviso) {
+  if (statusEmAtualizacao.has(id)) return;
+  if (mensagensEmEnvio.has(id)) {
+    toast("Aguarde o envio da mensagem antes de mudar o status.", "erro");
+    return;
+  }
+  statusEmAtualizacao.add(id);
+  if (status === STATUS.ASSUMIDO) cancelarConsultaIA(id);
+  renderizarJanela();
+  try {
+    await mudarStatus(id, status);
+    try {
+      await adicionarMensagem(id, { autor: "sistema", texto: aviso });
+      toast(aviso);
+    } catch (erro) {
+      toast(`Status salvo. O aviso não foi confirmado. ${erro.message}`, "erro");
+    }
+  } catch (erro) {
+    toast(`Não foi possível confirmar a mudança de status. ${erro.message}`, "erro");
+  } finally {
+    statusEmAtualizacao.delete(id);
+    if (estado.selecionadoId === id) renderizarJanela();
+  }
+  if (estado.selecionadoId === id && status === STATUS.ASSUMIDO) $("#campoMensagem")?.focus();
+}
+
+// Salva a mensagem digitada e mantém o rascunho caso o envio falhe.
+async function tratarEnvio(e) {
   const tipo = e.target.dataset.form;
   if (tipo !== "mensagem" && tipo !== "mensagem-cliente") return;
   e.preventDefault();
@@ -399,35 +453,41 @@ function tratarEnvio(e) {
   const atendimento = buscarAtendimento(estado.selecionadoId);
   if (!atendimento || atendimento.status === STATUS.RESOLVIDO) return;
 
+  const id = atendimento.id;
+  const cliente = tipo === "mensagem-cliente";
+  if (mensagensEmEnvio.has(id) || statusEmAtualizacao.has(id) || historicosEmLeitura.has(id)) return;
+  if (cliente ? consultasIA.has(id) : atendimento.status !== STATUS.ASSUMIDO) return;
+
   const campo = e.target.elements.mensagem;
-  const texto = campo.value.trim();
+  const rascunho = campo.value;
+  const texto = rascunho.trim();
   if (!texto) return;
 
-  if (tipo === "mensagem-cliente") {
-    if (consultasIA.has(atendimento.id)) return;
-    campo.value = "";
-    receberMensagemCliente(atendimento, texto);
-    $("#campoCliente")?.focus();
+  mensagensEmEnvio.add(id);
+  renderizarJanela();
+  try {
+    await adicionarMensagem(id, { autor: cliente ? "cliente" : "humano", texto });
+    if (estado.selecionadoId === id) {
+      const campoAtual = cliente ? $("#campoCliente") : $("#campoMensagem");
+      if (campoAtual?.value === rascunho) campoAtual.value = "";
+      campoAtual?.focus();
+    }
+  } catch (erro) {
+    toast(`Mensagem não confirmada. ${erro.message}`, "erro");
     return;
+  } finally {
+    mensagensEmEnvio.delete(id);
+    if (estado.selecionadoId === id) renderizarJanela();
   }
-
-  if (atendimento.status !== STATUS.ASSUMIDO) return;
-  campo.value = "";
-  adicionarMensagem(atendimento.id, { autor: "humano", texto, hora: horaAtual() });
-  $("#campoMensagem")?.focus();
+  if (cliente) responderAoCliente(id, texto);
 }
 
-// Registra a mensagem do cliente, mesmo quando a IA não pode responder.
-async function receberMensagemCliente(atendimento, texto) {
-  const id = atendimento.id;
-  let consulta = null;
-
-  if (atendimento.status === STATUS.EM_ATENDIMENTO && iaAtiva()) {
-    consulta = new AbortController();
-    consultasIA.set(id, consulta);
-  }
-  adicionarMensagem(id, { autor: "cliente", texto, hora: horaAtual() });
-  if (!consulta) return;
+// Só consulta o Gemini depois que a mensagem do cliente foi salva.
+async function responderAoCliente(id, texto) {
+  if (buscarAtendimento(id)?.status !== STATUS.EM_ATENDIMENTO || !iaAtiva()) return;
+  const consulta = new AbortController();
+  consultasIA.set(id, consulta);
+  if (estado.selecionadoId === id) renderizarJanela();
 
   let mensagem;
   try {
@@ -439,11 +499,15 @@ async function receberMensagemCliente(atendimento, texto) {
 
   // Uma consulta cancelada já saiu da lista e pode ter sido substituída.
   if (consultasIA.get(id) !== consulta) return;
-  consultasIA.delete(id);
-  if (buscarAtendimento(id)?.status === STATUS.EM_ATENDIMENTO && iaAtiva()) {
-    adicionarMensagem(id, { ...mensagem, hora: horaAtual() });
-  } else {
-    renderizarJanela();
+  try {
+    if (buscarAtendimento(id)?.status === STATUS.EM_ATENDIMENTO && iaAtiva()) {
+      await adicionarMensagem(id, mensagem);
+    }
+  } catch (erro) {
+    toast(`A resposta da IA não foi confirmada. ${erro.message}`, "erro");
+  } finally {
+    if (consultasIA.get(id) === consulta) consultasIA.delete(id);
+    if (estado.selecionadoId === id) renderizarJanela();
   }
 }
 
