@@ -143,12 +143,14 @@
   flex-wrap: wrap; /* se não couber, a legenda desce para baixo da rosca */
 }
 
-/* A rosca: círculo colorido (as cores das fatias são colocadas pelo JavaScript) */
+/* A rosca: círculo colorido (as cores das fatias são colocadas pelo JavaScript).
+   Sem dados de origem, ela fica cinza */
 .grafico-rosca {
   position: relative; /* referência para posicionar o centro */
   width: 170px;
   height: 170px;
   border-radius: 50%;
+  background-color: #22224a; /* cinza enquanto não há fatias */
   flex-shrink: 0;
   filter: drop-shadow(0 0 18px rgba(124, 58, 237, 0.35)); /* brilho roxo em volta */
 }
@@ -402,6 +404,55 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Lista de recentes sem nenhum atendimento */
+.lista-vazia {
+  padding: 24px 8px;
+  color: #8d8bb0;
+  text-align: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   AVISOS DE DADOS (quando o sistema ainda não tem a informação)
+   -------------------------------------------------------------------------- */
+
+/* Faixa no topo explicando o filtro de período */
+.aviso-periodo {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background-color: rgba(139, 92, 246, 0.08);
+  color: #c9c8e0;
+  font-size: 13px;
+}
+
+/* Valor "Sem dados" no lugar de um número */
+.sem-dados {
+  color: #8d8bb0;
+  font-weight: 500;
+}
+
+/* Explicação curta embaixo de uma métrica sem dados (texto claro para ler bem) */
+.nota-dados {
+  color: #c9c8e0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Aviso de vendas embaixo das linhas do gráfico, centralizado */
+.nota-vendas {
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* No cartão de vendas, "Sem dados" fica menor que um valor em reais
+   (o JavaScript coloca esta classe junto com .vendas-valor) */
+.vendas-sem-dados {
+  font-size: 22px;
+  color: #c9c8e0;
 }
 
 
