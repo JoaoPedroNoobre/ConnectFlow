@@ -1,42 +1,64 @@
 /* ==========================================================================
    whatsapp.css — tela 2: WHATSAPP
    Coluna da esquerda com a busca, os filtros e a lista de conversas;
-   janela da conversa à direita; painel com os dados do cliente (abre pelo
-   botão "..."); janela "Novo atendimento".
-   Usa também o comum.css (balões de mensagem, barra de digitar, botões,
-   interruptor "IA Ativa" do cabeçalho).
+   janela da conversa à direita (cabeçalho, histórico de mensagens,
+   simulador do cliente e campo de digitação); painel com os dados do
+   cliente (abre pelo botão "..."); janela "Novo atendimento".
+   Usa também o comum.css (balões de mensagem, botões, avatares, etiquetas
+   de status e o interruptor "IA Ativa" do cabeçalho).
+
+   Observação: algumas partes da conversa são criadas pelo JavaScript
+   (js/telas/whatsapp-tela.js) com nomes de classe antigos, como
+   .messages, .composer, .icon-btn, .msg-system e .sr-only. Elas também
+   recebem estilo aqui, para não ser preciso mexer no JavaScript.
    ========================================================================== */
 
 
-/* Divisão da tela: lista de conversas (340px) e conversa aberta (o resto) */
+/* --------------------------------------------------------------------------
+   1. DIVISÃO DA TELA
+   -------------------------------------------------------------------------- */
+
+/* Lista de conversas (360px) à esquerda e conversa aberta (o resto) à direita */
 .layout-conversas {
   display: grid; /* duas colunas lado a lado */
-  grid-template-columns: 340px minmax(0, 1fr); /* minmax(0, 1fr) = ocupa o resto sem estourar */
+  grid-template-columns: 360px minmax(0, 1fr); /* minmax(0, 1fr) = ocupa o resto sem estourar */
   gap: 16px;
   height: calc(100vh - 100px); /* altura da tela menos o cabeçalho (76px) e o espaço de baixo (24px) */
-  min-height: 520px;
+  min-height: 560px;
 }
 
-/* Coluna da esquerda: cartão com a lista de conversas */
+
+/* --------------------------------------------------------------------------
+   2. COLUNA DA ESQUERDA: BUSCA, FILTROS E LISTA DE CONVERSAS
+   -------------------------------------------------------------------------- */
+
+/* Cartão da coluna: topo fixo e lista que rola */
 .coluna-conversas {
   padding: 0;
   display: flex;
-  flex-direction: column; /* topo fixo e lista embaixo */
+  flex-direction: column; /* topo em cima, lista embaixo */
   overflow: hidden;
 }
 
 /* Parte de cima da coluna: busca e filtros */
 .coluna-conversas-topo {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   padding: 16px;
   border-bottom: 1px solid #25254a;
 }
 
-/* Linha com o campo de busca e o botão "+" */
+/* Linha com o campo de busca e o botão "+" (novo atendimento) */
 .linha-busca {
   display: flex;
   gap: 8px;
+}
+
+/* Botão "+" com a mesma altura do campo de busca */
+.linha-busca .botao-icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
 }
 
 /* Campo "Buscar conversas..." com a lupa dentro */
@@ -58,44 +80,41 @@
 }
 
 .busca input {
-  padding-left: 36px; /* espaço para a lupa */
-  min-height: 38px;
-  font-size: 12px;
+  padding-left: 38px; /* espaço para a lupa */
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 13px;
 }
 
-/* Barra de filtros (Todos, IA, Aguardando...) */
+/* Filtros (Todos, IA, Aguardando...): pílulas que quebram linha se não couberem */
 .grupo-filtros {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  width: 100%;
-  max-width: 100%;
-  background-color: #0f0f22;
-  border: 1px solid #25254a;
-  border-radius: 8px;
-  overflow-x: auto; /* se não couber, rola para o lado */
-  scrollbar-width: none; /* esconde a barra de rolagem */
+  flex-wrap: wrap; /* as pílulas descem para a linha de baixo em vez de sumir */
+  gap: 6px;
 }
 
-/* Cada botão de filtro */
+/* Cada filtro */
 .filtro {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 5px 11px;
+  border-radius: 999px; /* formato de pílula */
+  border: 1px solid #25254a;
+  background-color: #0f0f22;
   font-size: 12px;
   font-weight: 500;
   color: #8d8bb0;
   white-space: nowrap;
-  transition: background 160ms ease, color 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .filtro:hover {
+  border-color: #8b5cf6;
   color: #f1f0fb;
 }
 
 /* Filtro escolhido (o JavaScript coloca a classe "ativo") */
 .filtro.ativo {
   background-color: #7c3aed;
+  border-color: #7c3aed;
   color: #fff;
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.45);
 }
@@ -105,6 +124,9 @@
   flex: 1; /* ocupa a altura que sobra na coluna */
   overflow-y: auto;
   padding: 8px;
+  display: grid;
+  gap: 2px;
+  align-content: start; /* as conversas ficam no topo, sem esticar */
 }
 
 /* Cada conversa: avatar à esquerda e textos à direita */
@@ -112,40 +134,47 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr); /* avatar | textos */
   gap: 12px;
+  align-items: center;
   width: 100%;
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid transparent;
   text-align: left;
-  transition: background 160ms ease;
+  transition: background 160ms ease, border-color 160ms ease;
 }
 
 .item-conversa:hover {
   background-color: #1a1a35;
 }
 
-/* Conversa aberta: fundo roxo claro e uma faixa roxa à esquerda */
+/* Conversa aberta: fundo roxo claro, borda e uma faixa roxa à esquerda */
 .item-conversa.ativo {
   background-color: rgba(139, 92, 246, 0.14);
+  border-color: rgba(139, 92, 246, 0.35);
   box-shadow: inset 3px 0 0 #8b5cf6; /* "sombra" interna que desenha a faixa */
 }
 
 /* Textos da conversa: nome, hora, última mensagem e status */
 .item-conversa-texto {
-  min-width: 0;
+  min-width: 0; /* deixa os textos encolherem e usarem "..." */
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(0, 1fr); /* uma coluna que nunca passa da largura do cartão */
+  gap: 3px;
 }
 
 /* Linha com o nome do cliente e a hora */
 .item-conversa-linha {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
-  align-items: center;
 }
 
+/* Nome do cliente: nome muito longo termina com "..." */
 .item-conversa-linha strong {
+  min-width: 0; /* sem isso o nome não encolhe e passa da borda */
   font-size: 14px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -169,24 +198,62 @@
 /* Etiqueta de status embaixo, alinhada à esquerda */
 .item-conversa .etiqueta-status {
   justify-self: start;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
-/* Coluna da direita: cartão da conversa aberta */
+/* Avisos dentro da lista: "Nenhuma conversa", "Carregando..." ou erro do servidor */
+.lista-conversas .empty-state,
+.lista-conversas .estado-vazio {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 40px 16px;
+  text-align: center;
+  color: #8d8bb0;
+}
+
+.lista-conversas .empty-state .icone {
+  width: 36px;
+  height: 36px;
+  color: #34345f;
+}
+
+.lista-conversas .empty-state strong {
+  color: #c9c8e0;
+  font-size: 15px;
+}
+
+
+/* --------------------------------------------------------------------------
+   3. JANELA DA CONVERSA (coluna da direita)
+   -------------------------------------------------------------------------- */
+
+/* Cartão da conversa: cabeçalho, histórico e campos de digitação empilhados */
 .janela-conversa {
   padding: 0;
   display: flex;
-  flex-direction: column; /* topo, mensagens e barra de digitar empilhados */
+  flex-direction: column;
   overflow: hidden;
 }
 
-/* Topo da conversa: avatar, nome, status e botões */
+/* --- Cabeçalho da conversa --- */
+
+/* Avatar, nome e status do cliente à esquerda; botões à direita */
 .janela-conversa-topo {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  min-height: 72px;
+  padding: 14px 20px;
   border-bottom: 1px solid #25254a;
+  background-image: linear-gradient(180deg, rgba(139, 92, 246, 0.08), transparent); /* brilho roxo bem leve no topo */
+}
+
+/* Avatar um pouco maior no cabeçalho */
+.janela-conversa-topo .avatar {
+  width: 44px;
+  height: 44px;
+  font-size: 13px;
 }
 
 /* Seta de voltar para a lista: só aparece no celular */
@@ -194,15 +261,19 @@
   display: none;
 }
 
-/* Nome e status do cliente */
+/* Nome do cliente com a etiqueta de status embaixo */
 .janela-conversa-cliente {
   flex: 1; /* empurra os botões para a direita */
   min-width: 0;
-  overflow: hidden;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
 }
 
 .janela-conversa-cliente strong {
-  display: block;
+  max-width: 100%;
+  font-size: 16px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -212,50 +283,231 @@
   max-width: 100%;
 }
 
-/* Botões do topo da conversa (Assumir, Resolver, telefone, "...") */
+/* Botões do cabeçalho (Assumir, Resolver, telefone, "...") */
 .janela-conversa-acoes {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0; /* os botões nunca são espremidos */
 }
 
-/* Faixa no lugar da barra de digitar quando ainda não dá para responder */
+/* Botões "Devolver à IA" e "Reabrir": estilo com contorno */
+.botao-secundario {
+  background-color: #1a1a35;
+  border-color: #34345f;
+  color: #c9c8e0;
+}
+
+.botao-secundario:hover {
+  border-color: #8b5cf6;
+  color: #f1f0fb;
+}
+
+/* Botões só de ícone do cabeçalho (telefone e "...") */
+.janela-conversa .icon-btn {
+  display: inline-grid; /* grid usado só para centralizar o ícone */
+  align-items: center;
+  justify-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid #25254a;
+  background-color: #0f0f22;
+  color: #8d8bb0;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.janela-conversa .icon-btn:hover {
+  background-color: #1a1a35;
+  border-color: #34345f;
+  color: #f1f0fb;
+}
+
+.janela-conversa .icon-btn .icone {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Histórico de mensagens --- */
+
+/* Área das mensagens: ocupa toda a altura que sobra e rola sozinha */
+.janela-conversa .messages {
+  flex: 1; /* cresce e empurra os campos de digitação para baixo */
+  min-height: 0; /* deixa a área encolher e rolar em vez de esticar o cartão */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column; /* uma mensagem embaixo da outra */
+  gap: 10px;
+  padding: 24px;
+  background-color: #0f0f22;
+  background-image: radial-gradient(rgba(139, 92, 246, 0.06) 1px, transparent 1px); /* pontinhos roxos no fundo */
+  background-size: 18px 18px; /* um pontinho a cada 18px */
+}
+
+/* A primeira mensagem é empurrada para baixo: com poucas mensagens, a
+   conversa começa perto do campo de digitação, como no WhatsApp */
+.janela-conversa .messages > :first-child {
+  margin-top: auto;
+}
+
+/* Balões da conversa (as cores ficam no comum.css).
+   O balão do cliente (cinza, à esquerda) ganha uma borda para destacar do fundo */
+.janela-conversa .mensagem {
+  max-width: 70%; /* balões mais estreitos são mais fáceis de ler */
+  padding: 10px 14px 6px;
+  line-height: 1.5;
+  border: 1px solid #2e2e5a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Balões da IA e do atendente não precisam da borda */
+.janela-conversa .mensagem-ia,
+.janela-conversa .mensagem-atendente {
+  border-color: transparent;
+}
+
+/* Avisos do sistema no meio da conversa ("Atendimento assumido...", "Consultando o Gemini...") */
+.janela-conversa .mensagem-sistema,
+.janela-conversa .msg-system {
+  align-self: center; /* fica no centro */
+  margin: 4px 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid #25254a;
+  background-color: #13132a;
+  color: #8d8bb0;
+  font-size: 11px;
+  text-align: center;
+}
+
+/* --- Simulador de mensagem do cliente --- */
+
+/* Barra para simular uma mensagem do cliente (fica acima do campo do atendente) */
+.janela-conversa .composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px dashed #34345f; /* tracejado: mostra que é uma ferramenta de teste */
+  background-color: #11112a;
+}
+
+.janela-conversa .composer input {
+  flex: 1; /* o campo ocupa o espaço ao lado do botão */
+  min-height: 36px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* Botão "Simular" com contorno */
+.janela-conversa .composer .btn {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #34345f;
+  background-color: #1a1a35;
+  color: #c9c8e0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.janela-conversa .composer .btn:hover {
+  border-color: #8b5cf6;
+  color: #f1f0fb;
+}
+
+/* Enquanto a IA responde, o botão fica apagado */
+.janela-conversa .composer .btn:disabled {
+  opacity: 0.45;
+}
+
+/* Rótulo escondido da tela, mas lido por leitores de tela (acessibilidade) */
+.sr-only {
+  position: absolute; /* tira o texto do fluxo da página */
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0); /* recorta o elemento até ele sumir */
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Campo de digitação do atendente (só aparece depois de assumir) --- */
+
+.janela-conversa .caixa-digitar {
+  padding: 12px 16px;
+  gap: 10px;
+}
+
+.janela-conversa .caixa-digitar input {
+  min-height: 44px;
+  padding-left: 18px;
+  border-radius: 999px;
+}
+
+/* Botão redondo de enviar */
+.janela-conversa .caixa-digitar .botao-so-icone {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+/* --- Faixa no lugar do campo quando ainda não dá para responder --- */
+
 .aviso-bloqueado {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* em telas estreitas o botão desce */
   padding: 12px 16px;
   border-top: 1px solid #25254a;
   background-color: #13132a;
   color: #c4b5fd;
+  box-shadow: inset 3px 0 0 currentColor; /* faixa colorida à esquerda, da cor do texto */
 }
 
 .aviso-bloqueado span {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .aviso-bloqueado .icone {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
-/* Cliente aguardando atendente: texto laranja */
-.aviso-aguardando {
+/* Cliente aguardando atendente: laranja */
+.aviso-aguardando,
+.composer-lock--wait {
   color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.06);
 }
 
-/* Atendimento resolvido: texto verde */
-.aviso-resolvido {
+/* Atendimento resolvido: verde */
+.aviso-resolvido,
+.composer-lock--done {
   color: #22c55e;
+  background-color: rgba(34, 197, 94, 0.06);
 }
 
-/* Painel com os dados do cliente: gaveta que entra pela direita */
+
+/* --------------------------------------------------------------------------
+   4. PAINEL COM OS DADOS DO CLIENTE (abre pelo botão "...")
+   -------------------------------------------------------------------------- */
+
+/* Gaveta que entra pela direita */
 .painel-cliente {
   position: fixed; /* fica preso na tela, por cima de tudo */
   top: 0;
@@ -265,7 +517,7 @@
   max-width: 100%;
   z-index: 50; /* acima do menu (40) e do cabeçalho (20) */
   border-radius: 0;
-  padding: 20px;
+  padding: 24px 20px;
   overflow-y: auto;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
   background-color: #13132a;
@@ -293,6 +545,7 @@
 
 .painel-cliente-topo strong {
   font-size: 16px;
+  overflow-wrap: anywhere;
 }
 
 /* Botão X no canto direito do painel */
@@ -323,7 +576,11 @@
   overflow-wrap: anywhere;
 }
 
-/* Janela "Novo atendimento" (abre por cima da tela) */
+
+/* --------------------------------------------------------------------------
+   5. JANELA "NOVO ATENDIMENTO" (abre por cima da tela)
+   -------------------------------------------------------------------------- */
+
 .janela-modal {
   width: 440px;
   padding: 0;
@@ -379,14 +636,33 @@
 
 
 /* --------------------------------------------------------------------------
-   TELAS MENORES
+   6. TELAS MENORES
    -------------------------------------------------------------------------- */
 
-/* Tablet (até 1024px): lista de conversas mais estreita */
+/* Notebook (até 1280px): lista um pouco mais estreita */
+@media (max-width: 1280px) {
+  .layout-conversas {
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+
+  .janela-conversa .mensagem {
+    max-width: 78%;
+  }
+}
+
+/* Tablet (até 1024px) */
 @media (max-width: 1024px) {
   .layout-conversas {
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 290px minmax(0, 1fr);
     height: calc(100vh - 92px); /* cabeçalho (76px) + espaço de baixo (16px) */
+  }
+
+  .janela-conversa-topo {
+    padding: 12px 16px;
+  }
+
+  .janela-conversa .messages {
+    padding: 20px 16px;
   }
 }
 
@@ -412,7 +688,26 @@
     display: inline-grid;
   }
 
-  /* Botões do topo da conversa mostram só o ícone */
+  .janela-conversa-topo {
+    min-height: 64px;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .janela-conversa-topo .avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .janela-conversa-cliente strong {
+    font-size: 15px;
+  }
+
+  /* Botões do cabeçalho da conversa mostram só o ícone */
+  .janela-conversa-acoes {
+    gap: 6px;
+  }
+
   .janela-conversa-acoes .botao span {
     display: none;
   }
@@ -422,11 +717,50 @@
     padding: 0;
   }
 
+  .janela-conversa .messages {
+    padding: 16px 12px;
+  }
+
+  .janela-conversa .mensagem {
+    max-width: 85%;
+  }
+
+  .janela-conversa .composer {
+    padding: 8px 12px;
+  }
+
+  .janela-conversa .caixa-digitar {
+    padding: 10px 12px;
+  }
+
   .painel-cliente {
     padding: 16px;
   }
 
   .acoes-formulario .botao {
     flex: 1; /* botões da janela dividem a largura */
+  }
+}
+
+/* Celular pequeno (até 420px): filtros e itens um pouco mais compactos */
+@media (max-width: 420px) {
+  .filtro {
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+
+  .item-conversa {
+    padding: 10px;
+  }
+
+  /* Os botões do cabeçalho ficam menores */
+  .janela-conversa .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .janela-conversa-acoes .botao {
+    width: 32px;
+    height: 32px;
   }
 }
