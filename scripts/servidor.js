@@ -10,6 +10,7 @@ import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { responderComGemini } from "./gemini.js";
 import { gerarLinkWhatsApp } from "../js/whatsapp.js";
+import { STATUS } from "../js/atendimentos.js";
 
 const RAIZ = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const PORTA = Number(process.env.PORT) || 5173;
@@ -36,7 +37,7 @@ function responderJson(res, status, dados) {
 }
 
 // Faz uma leitura ou cadastro no Supabase. A chave fica no servidor.
-async function requisitarSupabase(tabela, filtros, dados, devolverRegistro = false) {
+async function requisitarSupabase(tabela, filtros, dados, devolverRegistro = false, metodo = dados ? "POST" : "GET") {
   const base = process.env.SUPABASE_URL?.trim();
   const chave = process.env.SUPABASE_SECRET_KEY?.trim();
 
@@ -49,7 +50,7 @@ async function requisitarSupabase(tabela, filtros, dados, devolverRegistro = fal
   }
 
   const opcoes = {
-    method: dados ? "POST" : "GET",
+    method: metodo,
     headers: { apikey: chave },
     redirect: "error",
     signal: AbortSignal.timeout(10000)
@@ -97,7 +98,7 @@ function pedidoLocal(req) {
 }
 
 // Lê o formulário como JSON e limita o tamanho do pedido.
-async function lerJsonCadastro(req, res) {
+async function lerJsonCadastro(req, res, limite = 4096) {
   const tipo = req.headers["content-type"]?.split(";")[0].trim().toLowerCase();
   if (tipo !== "application/json") {
     responderJson(res, 415, { erro: "Envie os dados do cadastro em JSON." });
@@ -109,7 +110,7 @@ async function lerJsonCadastro(req, res) {
     let tamanho = 0;
     for await (const parte of req) {
       tamanho += parte.length;
-      if (tamanho > 4096) {
+      if (tamanho > limite) {
         responderJson(res, 413, { erro: "Os dados do cadastro ultrapassam o tamanho permitido." });
         return null;
       }
@@ -162,10 +163,10 @@ async function cadastrarProduto(req, res) {
 }
 
 // Obtém registros das tabelas de clientes e atendimentos com erros claros.
-async function consultarRegistros(tabela, filtros, dados) {
+async function consultarRegistros(tabela, filtros, dados, metodo) {
   let resposta;
   try {
-    resposta = await requisitarSupabase(tabela, filtros, dados, Boolean(dados));
+    resposta = await requisitarSupabase(tabela, filtros, dados, Boolean(dados), metodo);
   } catch {
     throw new Error(`Falha de conexão ao acessar ${tabela} no Supabase.`);
   }
@@ -254,6 +255,117 @@ async function cadastrarAtendimento(req, res) {
   }
 }
 
+// Confere se o atendimento pertence a um cliente da empresa 1.
+async function buscarAtendimentoDaEmpresa(id) {
+  const [atendimento] = await consultarRegistros("atendimentos", {
+    select: "id::text,status,clientes!inner(empresa_id)",
+    id: `eq.${id}`,
+    "clientes.empresa_id": "eq.1"
+  });
+  return atendimento;
+}
+
+// Lê o histórico em ordem cronológica, usando o ID para desempatar.
+async function listarMensagens(res, id) {
+  const mensagens = [];
+  const filtros = {
+    select: "id::text,autor,texto,created_at",
+    atendimento_id: `eq.${id}`,
+    order: "created_at.asc,id.asc",
+    limit: "100"
+  };
+  while (true) {
+    const pagina = await consultarRegistros("mensagens", { ...filtros, offset: String(mensagens.length) });
+    mensagens.push(...pagina);
+    if (pagina.length < 100) break;
+  }
+  responderJson(res, 200, { mensagens });
+}
+
+// Valida o autor e guarda a mensagem com a data e o ID gerados pelo banco.
+async function cadastrarMensagem(req, res, atendimento) {
+  const dados = await lerJsonCadastro(req, res, 50000);
+  if (!dados) return;
+
+  const { autor } = dados;
+  const texto = typeof dados.texto === "string" ? dados.texto.trim() : "";
+  if (!["cliente", "ia", "humano", "sistema"].includes(autor) || !texto) {
+    responderJson(res, 400, { erro: "Informe um autor válido e o texto da mensagem." });
+    return;
+  }
+
+  const status = atendimento.status;
+  const iaAtendendo = status === "ia_atendendo" || status === STATUS.EM_ATENDIMENTO;
+  if ((autor === "ia" && !iaAtendendo) ||
+      (autor === "humano" && status !== STATUS.ASSUMIDO) ||
+      (autor === "cliente" && status === STATUS.RESOLVIDO)) {
+    responderJson(res, 409, { erro: "O status atual não permite esta mensagem. Recarregue a página." });
+    return;
+  }
+
+  const [mensagem] = await consultarRegistros("mensagens", { select: "id::text,autor,texto,created_at" }, {
+    atendimento_id: atendimento.id,
+    autor,
+    texto
+  });
+  if (!mensagem?.id) throw new Error("O Supabase não confirmou a mensagem.");
+  responderJson(res, 201, { mensagem });
+}
+
+// Só confirma a mudança se o status anterior ainda for o mesmo no banco.
+async function atualizarStatusAtendimento(req, res, atendimento) {
+  const dados = await lerJsonCadastro(req, res);
+  if (!dados) return;
+  if (!Object.values(STATUS).includes(dados.status)) {
+    responderJson(res, 400, { erro: "Status de atendimento inválido." });
+    return;
+  }
+  if (dados.anterior !== atendimento.status) {
+    responderJson(res, 409, { erro: "O status já mudou. Recarregue a página antes de tentar novamente." });
+    return;
+  }
+
+  const status = dados.status === STATUS.EM_ATENDIMENTO ? "ia_atendendo" : dados.status;
+  const [atualizado] = await consultarRegistros("atendimentos", {
+    id: `eq.${atendimento.id}`,
+    status: `eq.${atendimento.status}`,
+    select: "status"
+  }, { status }, "PATCH");
+  if (!atualizado) {
+    responderJson(res, 409, { erro: "O status já mudou. Recarregue a página antes de tentar novamente." });
+    return;
+  }
+  responderJson(res, 200, { status: atualizado.status });
+}
+
+// Encaminha as rotas de histórico e status depois de verificar o acesso local.
+async function atenderConversa(req, res, id, recurso) {
+  if (!pedidoLocal(req)) {
+    responderJson(res, 403, { erro: "Abra o ConnectFlow no endereço local para acessar a conversa." });
+    return;
+  }
+  const metodos = recurso ? ["GET", "POST"] : ["PATCH"];
+  if (!metodos.includes(req.method)) {
+    res.setHeader("Allow", metodos.join(", "));
+    responderJson(res, 405, { erro: "Método não disponível para esta rota." });
+    return;
+  }
+  try {
+    const atendimento = await buscarAtendimentoDaEmpresa(id);
+    if (!atendimento) {
+      responderJson(res, 404, { erro: "Atendimento não encontrado." });
+    } else if (req.method === "GET") {
+      await listarMensagens(res, id);
+    } else if (req.method === "POST") {
+      await cadastrarMensagem(req, res, atendimento);
+    } else {
+      await atualizarStatusAtendimento(req, res, atendimento);
+    }
+  } catch (erro) {
+    responderJson(res, 502, { erro: erro.message });
+  }
+}
+
 createServer(async (req, res) => {
 
   let caminho;
@@ -270,6 +382,12 @@ createServer(async (req, res) => {
   // Impede acesso a arquivos privados
   if (caminho.split(/[\\/]/).some(parte => parte.startsWith("."))) {
     res.writeHead(403).end("Acesso negado");
+    return;
+  }
+
+  const conversa = caminho.match(/^\/api\/atendimentos\/([1-9]\d{0,18})(\/mensagens)?$/);
+  if (conversa) {
+    await atenderConversa(req, res, conversa[1], conversa[2]);
     return;
   }
 
