@@ -6,7 +6,8 @@
 
 import { STATUS, filtrarAtendimentos } from "../atendimentos.js";
 import { gerarLinkWhatsApp } from "../whatsapp.js";
-import { consultarGemini, iaAtiva } from "./agente.js";
+import { consultarGemini, iaAtiva, whatsappReal, simuladorDisponivel, sincronizarWhatsapp } from "./agente.js";
+import { iniciarSincronizacaoWhatsapp } from "../sincronizacao-whatsapp.js";
 import {
   listarAtendimentos, buscarAtendimento, inscrever,
   carregarAtendimentos, carregarMensagens, mudarStatus, adicionarMensagem, novoAtendimento
@@ -19,7 +20,7 @@ import {
 const estado = { filtro: "todos", busca: "", selecionadoId: null, carregando: false, erroCarregamento: "" };
 // Guarda a consulta em andamento de cada conversa.
 const consultasIA = new Map();
-const historicosEmLeitura = new Set();
+const historicosEmLeitura = new Map();
 const errosHistorico = new Map();
 const mensagensEmEnvio = new Set();
 const statusEmAtualizacao = new Set();
@@ -65,8 +66,26 @@ export function iniciarWhatsApp() {
   inscrever(renderizarTudo);
   renderizarTudo();
   carregarConversas();
+  conectarWhatsapp();
 }
 
+// O navegador reconecta o SSE e relê os dados depois de cada aviso.
+function conectarWhatsapp() {
+  return iniciarSincronizacaoWhatsapp({
+    lerModo: async () => {
+      const real = await sincronizarWhatsapp();
+      renderizarJanela();
+      return real;
+    },
+    atualizar: async () => {
+      await carregarAtendimentos();
+      await sincronizarWhatsapp();
+      const id = estado.selecionadoId;
+      if (id && buscarAtendimento(id) && !await carregarHistorico(id)) throw new Error("Histórico indisponível.");
+    },
+    mostrar: (texto) => { $("#modoWhatsapp").textContent = texto; }
+  });
+}
 // Atualiza a lista sem mudar a tela que o usuário está visitando.
 async function carregarConversas() {
   if (estado.carregando) return;
@@ -109,18 +128,31 @@ export function abrirConversa(id) {
 
 // Carrega o histórico da conversa selecionada e permite tentar de novo se falhar.
 async function carregarHistorico(id) {
-  if (historicosEmLeitura.has(id)) return;
-  historicosEmLeitura.add(id);
+  const anterior = historicosEmLeitura.get(id);
+  if (anterior) {
+    anterior.pendente = true;
+    return anterior.promessa;
+  }
+  const leitura = { pendente: true };
+  historicosEmLeitura.set(id, leitura);
   errosHistorico.delete(id);
   renderizarJanela();
-  try {
-    await carregarMensagens(id);
-  } catch (erro) {
-    errosHistorico.set(id, erro.message);
-  } finally {
-    historicosEmLeitura.delete(id);
-    if (estado.selecionadoId === id) renderizarJanela();
-  }
+  leitura.promessa = (async () => {
+    try {
+      while (leitura.pendente) {
+        leitura.pendente = false;
+        await carregarMensagens(id);
+      }
+      return true;
+    } catch (erro) {
+      errosHistorico.set(id, erro.message);
+      return false;
+    } finally {
+      historicosEmLeitura.delete(id);
+      if (estado.selecionadoId === id) renderizarJanela();
+    }
+  })();
+  return leitura.promessa;
 }
 
 function renderizarTudo() {
@@ -222,7 +254,7 @@ function renderizarMensagem(m) {
     <div class="${classes[m.autor]}">
       ${autor[m.autor] ?? ""}
       <p>${escapar(m.texto)}</p>
-      <time>${escapar(m.hora)}</time>
+      <time>${escapar(m.hora)}${m.entrega ? ` · ${({ enviando: "Aguardando confirmação", aceita: "Aceita pela Meta", enviada: "Enviada", entregue: "Entregue", lida: "Lida", falha: "Falha no envio", incerta: "Envio não confirmado" })[m.entrega] || ""}` : ""}</time>
     </div>`;
 }
 
@@ -309,6 +341,7 @@ function renderizarJanela() {
       <span class="avatar avatar-cor-${corAvatar(a.cliente)}">${iniciais(a.cliente)}</span>
       <div class="janela-conversa-cliente">
         <strong>${escapar(a.cliente)}</strong>
+        ${whatsappReal() && a.canal !== "whatsapp" ? "<small>Conversa interna</small>" : ""}
         ${badgeStatus(a.status)}
       </div>
       <div class="janela-conversa-acoes">
@@ -321,7 +354,7 @@ function renderizarJanela() {
       ${historico}
       ${consultando ? '<p class="msg-system">Consultando o Gemini…</p>' : ""}
     </div>
-    ${a.status !== STATUS.RESOLVIDO ? formularioSimulacao(consultando || enviando) : ""}
+    ${simuladorDisponivel() && a.status !== STATUS.RESOLVIDO ? formularioSimulacao(consultando || enviando) : ""}
     ${rodape(a.status, enviando)}`;
 
   for (const campo of els.janela.querySelectorAll("form.composer input")) {
@@ -455,6 +488,7 @@ async function tratarEnvio(e) {
 
   const id = atendimento.id;
   const cliente = tipo === "mensagem-cliente";
+  if (cliente && !simuladorDisponivel()) return;
   if (mensagensEmEnvio.has(id) || statusEmAtualizacao.has(id) || historicosEmLeitura.has(id)) return;
   if (cliente ? consultasIA.has(id) : atendimento.status !== STATUS.ASSUMIDO) return;
 
@@ -479,7 +513,7 @@ async function tratarEnvio(e) {
     mensagensEmEnvio.delete(id);
     if (estado.selecionadoId === id) renderizarJanela();
   }
-  if (cliente) responderAoCliente(id, texto);
+  if (cliente && !whatsappReal()) responderAoCliente(id, texto);
 }
 
 // Só consulta o Gemini depois que a mensagem do cliente foi salva.

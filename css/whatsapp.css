@@ -48,6 +48,14 @@
   border-bottom: 1px solid #25254a;
 }
 
+/* Identificação acima da busca, sem dividir o espaço com o campo. */
+.modo-whatsapp {
+  color: #a78bfa;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 /* Linha com o campo de busca e o botão "+" (novo atendimento) */
 .linha-busca {
   display: flex;
@@ -66,6 +74,7 @@
   position: relative; /* referência para posicionar a lupa */
   display: block;
   flex: 1; /* ocupa o espaço ao lado do botão "+" */
+  min-width: 0;
 }
 
 /* Lupa dentro do campo de busca */

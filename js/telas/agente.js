@@ -10,6 +10,42 @@ import {
 
 const CHAVE_AGENTE = "cf-agente";
 let catalogo = [];
+let modoWhatsapp = null;
+let configuracaoReal;
+
+export function whatsappReal() { return modoWhatsapp === true; }
+export function simuladorDisponivel() { return modoWhatsapp === false; }
+
+// O painel real lê a configuração que o webhook usa no servidor.
+export async function sincronizarWhatsapp() {
+  const resposta = await fetch("/api/whatsapp/config");
+  const dados = await resposta.json();
+  modoWhatsapp = dados.real;
+  if (!resposta.ok) throw new Error(dados.erro);
+  if (dados.real && dados.config?.revisao > (configuracaoReal?.revisao ?? -1)) {
+    configuracaoReal = dados.config;
+    preencherFormulario($("#formAgente"), { ...dados.config.agente, ativo: dados.config.ativa });
+    atualizarIndicadoresIA();
+  }
+  return modoWhatsapp;
+}
+
+async function salvarConfiguracaoReal(ativa, empresa = lerArmazenado("cf-empresa") || {}) {
+  const resposta = await fetch("/api/whatsapp/config", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ativa, agente: lerFormulario($("#formAgente")),
+      empresa: { nome: empresa.nome || "Empresa ConnectFlow", descricao: empresa.descricao,
+        endereco: empresa.endereco, horario: empresa.horario } })
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro);
+  if (dados.config.revisao > (configuracaoReal?.revisao ?? -1)) configuracaoReal = dados.config;
+}
+
+export async function salvarAgenteRealSeNecessario(chave, dados) {
+  if (!whatsappReal() || !["cf-agente", "cf-empresa"].includes(chave)) return;
+  await salvarConfiguracaoReal(configuracaoReal?.ativa === true, chave === "cf-empresa" ? dados : undefined);
+}
 
 // Liga os eventos da tela e carrega o catálogo ao abrir o sistema.
 export function iniciarAgente() {
@@ -54,7 +90,19 @@ export function iaAtiva() {
   return $('input[name="ativo"][form="formAgente"]').checked;
 }
 
-function definirIAAtiva(ativa) {
+async function definirIAAtiva(ativa) {
+  if (modoWhatsapp === null) return;
+  if (whatsappReal()) {
+    try {
+      await salvarConfiguracaoReal(ativa);
+      atualizarIndicadoresIA();
+      toast(ativa ? "IA ativada no servidor." : "IA pausada no servidor.");
+    } catch {
+      atualizarIndicadoresIA();
+      toast("A mudança da IA não foi confirmada pelo servidor.", "erro");
+    }
+    return;
+  }
   $$("[data-ia-ativa]").forEach((c) => { c.checked = ativa; });
   const salvo = lerArmazenado(CHAVE_AGENTE) ?? lerFormulario($("#formAgente"));
   gravarArmazenado(CHAVE_AGENTE, { ...salvo, ativo: ativa });
@@ -63,7 +111,7 @@ function definirIAAtiva(ativa) {
 }
 
 function atualizarIndicadoresIA() {
-  const ativa = iaAtiva();
+  const ativa = whatsappReal() ? configuracaoReal?.ativa === true : iaAtiva();
   $$("[data-ia-ativa]").forEach((c) => { c.checked = ativa; });
   $$(".botao-ia-ativa").forEach((p) => p.classList.toggle("desligado", !ativa));
   $$("[data-ia-rotulo]").forEach((r) => { r.textContent = ativa ? "IA Ativa" : "IA pausada"; });
