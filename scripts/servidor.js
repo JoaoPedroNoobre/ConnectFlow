@@ -11,9 +11,34 @@ import { fileURLToPath } from "node:url";
 import { responderComGemini } from "./gemini.js";
 import { gerarLinkWhatsApp } from "../js/whatsapp.js";
 import { STATUS } from "../js/atendimentos.js";
+import { assinaturaValida, verificarWebhook, eventosWhatsapp, enviarTexto, criarFila, iguais } from "./whatsapp-cloud.js";
 
 const RAIZ = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const PORTA = Number(process.env.PORT) || 5173;
+const HOSPEDADO = process.env.CONNECTFLOW_HOSTED === "1" || process.env.RENDER === "true" || Boolean(process.env.RENDER_EXTERNAL_URL);
+const REAL = process.env.WHATSAPP_MODE === "real";
+const EMPRESA = process.env.CONNECTFLOW_EMPRESA_ID || (REAL ? "" : "1");
+const ORIGEM = process.env.PANEL_ORIGIN || "";
+const CLOUD = { versao: process.env.WHATSAPP_GRAPH_VERSION, numeroId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+  token: process.env.WHATSAPP_ACCESS_TOKEN };
+const fila = criarFila();
+const assinantes = new Set();
+if (!/^[1-9]\d{0,14}$/.test(EMPRESA)) throw new Error("Configure CONNECTFLOW_EMPRESA_ID.");
+let credencialPainel = "";
+let hostPainel = "";
+if (HOSPEDADO) {
+  const url = URL.canParse(ORIGEM) ? new URL(ORIGEM) : null;
+  const usuario = process.env.PANEL_USER || "";
+  const senha = process.env.PANEL_PASSWORD || "";
+  if (!usuario.trim() || /[:\x00-\x1f\x7f]/.test(usuario) || !senha.trim() || /[\x00-\x1f\x7f]/.test(senha) ||
+      url?.protocol !== "https:" || url.origin !== ORIGEM) {
+    throw new Error("Configure a autenticação e a origem HTTPS do painel.");
+  }
+  hostPainel = url.host;
+  credencialPainel = Buffer.from(`${usuario}:${senha}`, "utf8").toString("base64");
+}
+if (REAL && (!/^v\d+\.\d+$/.test(CLOUD.versao) || !/^\d+$/.test(CLOUD.numeroId) || !CLOUD.token ||
+    !process.env.META_APP_SECRET || !process.env.WHATSAPP_VERIFY_TOKEN)) throw new Error("Configuração do WhatsApp incompleta.");
 const telefonesEmCadastro = new Set();
 
 const TIPOS = {
@@ -67,7 +92,7 @@ async function requisitarSupabase(tabela, filtros, dados, devolverRegistro = fal
 async function acessarProdutos(metodo, produto) {
   const cadastrando = metodo === "POST";
   try {
-    const filtros = cadastrando ? {} : { select: "id,nome,categoria,preco", empresa_id: "eq.1", order: "id.asc" };
+    const filtros = cadastrando ? {} : { select: "id,nome,categoria,preco", empresa_id: `eq.${EMPRESA}`, order: "id.asc" };
     const resposta = await requisitarSupabase("produtos", filtros, produto);
     if (!resposta) {
       return { status: 503, erro: "O catálogo do Supabase não está configurado no servidor." };
@@ -91,6 +116,10 @@ async function acessarProdutos(metodo, produto) {
 
 // Aceita a leitura local e exige a mesma origem no envio do formulário.
 function pedidoLocal(req) {
+  if (HOSPEDADO) {
+    if (req.headers.host !== hostPainel) return false;
+    return (req.method === "GET" && !req.headers.origin) || req.headers.origin === ORIGEM;
+  }
   const host = req.headers.host;
   if (host !== `localhost:${PORTA}` && host !== `127.0.0.1:${PORTA}`) return false;
   if (req.method === "GET" && !req.headers.origin) return true;
@@ -154,7 +183,7 @@ async function cadastrarProduto(req, res) {
   }
 
   // A empresa é definida no servidor, mesmo se a página enviar outro ID.
-  const resultado = await acessarProdutos("POST", { nome, categoria: categoria.trim(), preco, empresa_id: 1 });
+  const resultado = await acessarProdutos("POST", { nome, categoria: categoria.trim(), preco, empresa_id: EMPRESA });
   if (resultado.erro) {
     responderJson(res, resultado.status, { erro: resultado.erro });
   } else {
@@ -188,8 +217,8 @@ async function consultarRegistros(tabela, filtros, dados, metodo) {
 async function listarAtendimentosSalvos(res) {
   try {
     const atendimentos = await consultarRegistros("atendimentos", {
-      select: "id::text,status,clientes!inner(nome,telefone)",
-      "clientes.empresa_id": "eq.1",
+      select: "id::text,status,clientes!inner(nome,telefone)" + (REAL ? ",canal,revisao_ia" : ""),
+      "clientes.empresa_id": `eq.${EMPRESA}`,
       order: "created_at.desc,id.desc"
     });
     responderJson(res, 200, { atendimentos });
@@ -203,14 +232,14 @@ async function localizarOuCadastrarCliente(nome, telefone) {
   const select = "id::text,nome,telefone";
   const [cliente] = await consultarRegistros("clientes", {
     select,
-    empresa_id: "eq.1",
+    empresa_id: `eq.${EMPRESA}`,
     telefone: `eq.${telefone}`,
     order: "id.asc",
     limit: "1"
   });
   if (cliente) return cliente;
 
-  const [criado] = await consultarRegistros("clientes", { select }, { nome, telefone, empresa_id: 1 });
+  const [criado] = await consultarRegistros("clientes", { select }, { nome, telefone, empresa_id: EMPRESA });
   if (!criado?.id) throw new Error("O Supabase não confirmou o cadastro do cliente.");
   return criado;
 }
@@ -248,6 +277,7 @@ async function cadastrarAtendimento(req, res) {
     );
     if (!atendimento?.id) throw new Error("O Supabase não confirmou o cadastro do atendimento.");
     responderJson(res, 201, { atendimento: { ...atendimento, clientes: cliente } });
+    avisarPainel();
   } catch (erro) {
     responderJson(res, 502, { erro: `${erro.message} Recarregue a página para conferir antes de tentar novamente.` });
   } finally {
@@ -255,12 +285,12 @@ async function cadastrarAtendimento(req, res) {
   }
 }
 
-// Confere se o atendimento pertence a um cliente da empresa 1.
+// Confere se o atendimento pertence a um cliente da empresa do piloto.
 async function buscarAtendimentoDaEmpresa(id) {
   const [atendimento] = await consultarRegistros("atendimentos", {
-    select: "id::text,status,clientes!inner(empresa_id)",
+    select: "id::text,status,clientes!inner(empresa_id,telefone)" + (REAL ? ",canal,revisao_ia" : ""),
     id: `eq.${id}`,
-    "clientes.empresa_id": "eq.1"
+    "clientes.empresa_id": `eq.${EMPRESA}`
   });
   return atendimento;
 }
@@ -269,7 +299,7 @@ async function buscarAtendimentoDaEmpresa(id) {
 async function listarMensagens(res, id) {
   const mensagens = [];
   const filtros = {
-    select: "id::text,autor,texto,created_at",
+    select: "id::text,autor,texto,created_at" + (REAL ? ",entrega" : ""),
     atendimento_id: `eq.${id}`,
     order: "created_at.asc,id.asc",
     limit: "100"
@@ -295,6 +325,19 @@ async function cadastrarMensagem(req, res, atendimento) {
   }
 
   const status = atendimento.status;
+  if (REAL && atendimento.canal === "whatsapp" && autor !== "sistema") {
+    if (autor !== "humano" || status !== STATUS.ASSUMIDO) {
+      responderJson(res, 409, { erro: "Assuma a conversa real para responder como humano." });
+      return;
+    }
+    if (texto.length > 4096) {
+      responderJson(res, 400, { erro: "O WhatsApp aceita até 4096 caracteres por mensagem." });
+      return;
+    }
+    const envio = await entregarWhatsapp(atendimento, autor, texto);
+    responderJson(res, envio.erro ? 502 : 201, envio);
+    return;
+  }
   const iaAtendendo = status === "ia_atendendo" || status === STATUS.EM_ATENDIMENTO;
   if ((autor === "ia" && !iaAtendendo) ||
       (autor === "humano" && status !== STATUS.ASSUMIDO) ||
@@ -310,6 +353,7 @@ async function cadastrarMensagem(req, res, atendimento) {
   });
   if (!mensagem?.id) throw new Error("O Supabase não confirmou a mensagem.");
   responderJson(res, 201, { mensagem });
+  avisarPainel();
 }
 
 // Só confirma a mudança se o status anterior ainda for o mesmo no banco.
@@ -329,13 +373,151 @@ async function atualizarStatusAtendimento(req, res, atendimento) {
   const [atualizado] = await consultarRegistros("atendimentos", {
     id: `eq.${atendimento.id}`,
     status: `eq.${atendimento.status}`,
-    select: "status"
-  }, { status }, "PATCH");
+    select: REAL ? "status,revisao_ia" : "status"
+  }, REAL ? { status, revisao_ia: Number(atendimento.revisao_ia) + 1 } : { status }, "PATCH");
   if (!atualizado) {
     responderJson(res, 409, { erro: "O status já mudou. Recarregue a página antes de tentar novamente." });
     return;
   }
-  responderJson(res, 200, { status: atualizado.status });
+  responderJson(res, 200, atualizado);
+  avisarPainel();
+}
+
+function avisarPainel() {
+  for (const conexao of assinantes) {
+    // Clientes lentos reconectam em vez de acumular notificações em memória.
+    if (!conexao.write("event: atualizar\ndata: {}\n\n")) conexao.destroy();
+  }
+}
+
+function abrirEventos(res) {
+  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-store",
+    "X-Accel-Buffering": "no" });
+  res.write("retry: 2000\nevent: atualizar\ndata: {}\n\n");
+  assinantes.add(res);
+  const pulso = setInterval(() => res.write(": pulso\n\n"), 15000);
+  res.on("close", () => { clearInterval(pulso); assinantes.delete(res); });
+}
+
+async function configWhatsapp() {
+  const [config] = await consultarRegistros("whatsapp_config", { empresa_id: `eq.${EMPRESA}` });
+  return config || { ativa: false, revisao: 0, agente: {}, empresa: {} };
+}
+
+async function salvarConfigWhatsapp(req, res) {
+  const dados = await lerJsonCadastro(req, res, 12000);
+  if (!dados) return;
+  const anterior = await configWhatsapp();
+  if (typeof dados.ativa !== "boolean" || !dados.agente || typeof dados.agente !== "object" ||
+      Array.isArray(dados.agente) || typeof dados.empresa?.nome !== "string" || !dados.empresa.nome.trim()) {
+    responderJson(res, 400, { erro: "Informe a configuração do agente e o nome da empresa." });
+    return;
+  }
+  const valores = { ativa: dados.ativa, agente: dados.agente, empresa: dados.empresa, revisao: Number(anterior.revisao) + 1 };
+  const [config] = anterior.empresa_id
+    ? await consultarRegistros("whatsapp_config", { empresa_id: `eq.${EMPRESA}` }, valores, "PATCH")
+    : await consultarRegistros("whatsapp_config", {}, { ...valores, empresa_id: EMPRESA });
+  if (!config) throw new Error("O banco não confirmou as configurações.");
+  responderJson(res, 200, { config });
+  avisarPainel();
+}
+
+// Guarda a tentativa antes de enviar. Aceitação pela Meta não significa entrega.
+async function entregarWhatsapp(atendimento, autor, texto) {
+  if (texto.length > 4096) throw new Error("O WhatsApp aceita até 4096 caracteres por mensagem.");
+  const select = "id::text,autor,texto,created_at,entrega";
+  const [tentativa] = await consultarRegistros("mensagens", { select }, {
+    atendimento_id: atendimento.id, autor, texto, entrega: "enviando"
+  });
+  if (!tentativa?.id) throw new Error("O banco não confirmou o registro da tentativa.");
+  avisarPainel();
+  let resultado;
+  try {
+    const whatsapp_id = await enviarTexto(atendimento.clientes.telefone, texto, CLOUD);
+    resultado = { whatsapp_id, entrega: "aceita" };
+  } catch (erro) {
+    resultado = { entrega: erro.entrega === "falha" ? "falha" : "incerta" };
+  }
+  try {
+    const [mensagem] = await consultarRegistros("mensagens", { select, id: `eq.${tentativa.id}` }, resultado, "PATCH");
+    if (!mensagem?.id || mensagem.entrega !== resultado.entrega) throw new Error("Tentativa não atualizada.");
+    avisarPainel();
+    if (resultado.entrega === "aceita") return { mensagem };
+    const erro = resultado.entrega === "falha"
+      ? "A Meta recusou o envio."
+      : "A Meta não confirmou o envio. Confira o histórico antes de reenviar.";
+    return { mensagem, erro };
+  } catch {
+    return { mensagem: tentativa, erro: "Não foi possível registrar o resultado do envio. Confira o histórico antes de reenviar." };
+  }
+}
+
+async function responderWhatsapp(id, texto, versoes) {
+  const catalogo = await acessarProdutos("GET");
+  if (catalogo.erro) throw new Error("Catálogo indisponível para resposta automática.");
+  const resposta = (await responderComGemini(versoes.config.empresa, catalogo.produtos, texto, versoes.config.agente)).trim();
+  if (!resposta) return;
+  await fila(async () => {
+    const atual = await buscarAtendimentoDaEmpresa(id);
+    const config = await configWhatsapp();
+    if (config.ativa && config.revisao === versoes.config.revisao &&
+        atual?.status === "ia_atendendo" && atual.revisao_ia === versoes.conversa) {
+      const envio = await entregarWhatsapp(atual, "ia", resposta);
+      if (envio.erro) console.error("Envio automático não confirmado.");
+    }
+  });
+}
+
+async function webhookWhatsapp(req, res) {
+  if (!REAL) return res.writeHead(404).end();
+  if (req.method === "GET") {
+    const desafio = verificarWebhook(new URL(req.url, "http://localhost").searchParams, process.env.WHATSAPP_VERIFY_TOKEN);
+    return res.writeHead(desafio === null ? 403 : 200, { "Content-Type": "text/plain" }).end(desafio ?? "");
+  }
+  if (req.method !== "POST") return res.writeHead(405, { Allow: "GET, POST" }).end();
+  const partes = [];
+  let tamanho = 0;
+  try {
+    for await (const parte of req) {
+      tamanho += parte.length;
+      if (tamanho > 512000) return res.writeHead(413).end();
+      partes.push(parte);
+    }
+    const corpo = Buffer.concat(partes);
+    if (!assinaturaValida(corpo, req.headers["x-hub-signature-256"], process.env.META_APP_SECRET)) {
+      return res.writeHead(403).end();
+    }
+    let evento;
+    try { evento = JSON.parse(corpo.toString("utf8")); } catch { return res.writeHead(400).end(); }
+    const { mensagens, estados } = eventosWhatsapp(evento, CLOUD.numeroId);
+    for (const msg of mensagens) {
+      const trabalho = await fila(async () => {
+        const [registro] = await consultarRegistros("rpc/receber_whatsapp", {}, {
+          p_empresa: EMPRESA, p_telefone: msg.telefone, p_nome: msg.nome, p_id: msg.id, p_texto: msg.texto
+        });
+        if (!registro) return;
+        avisarPainel();
+        const atual = await buscarAtendimentoDaEmpresa(registro.atendimento_id);
+        const config = await configWhatsapp();
+        if (config.ativa && atual?.status === "ia_atendendo") {
+          return { id: atual.id, config, conversa: atual.revisao_ia };
+        }
+      });
+      if (trabalho) responderWhatsapp(trabalho.id, msg.texto, trabalho).catch(() => console.error("Resposta automática não concluída."));
+    }
+    await fila(async () => {
+      const etapas = { sent: ["enviada", "aceita"], delivered: ["entregue", "aceita,enviada"],
+        read: ["lida", "aceita,enviada,entregue"], failed: ["falha", "aceita,enviada"] };
+      for (const item of estados) {
+        const [entrega, anteriores] = etapas[item.status];
+        await consultarRegistros("mensagens", { whatsapp_id: `eq.${item.id}`, entrega: `in.(${anteriores})` }, { entrega }, "PATCH");
+      }
+      if (estados.length) avisarPainel();
+    });
+    res.writeHead(200).end();
+  } catch {
+    res.writeHead(503).end();
+  }
 }
 
 // Encaminha as rotas de histórico e status depois de verificar o acesso local.
@@ -351,22 +533,26 @@ async function atenderConversa(req, res, id, recurso) {
     return;
   }
   try {
-    const atendimento = await buscarAtendimentoDaEmpresa(id);
-    if (!atendimento) {
-      responderJson(res, 404, { erro: "Atendimento não encontrado." });
-    } else if (req.method === "GET") {
-      await listarMensagens(res, id);
-    } else if (req.method === "POST") {
-      await cadastrarMensagem(req, res, atendimento);
-    } else {
-      await atualizarStatusAtendimento(req, res, atendimento);
-    }
+    const acao = async () => {
+      const atendimento = await buscarAtendimentoDaEmpresa(id);
+      if (!atendimento) {
+        responderJson(res, 404, { erro: "Atendimento não encontrado." });
+      } else if (req.method === "GET") {
+        await listarMensagens(res, id);
+      } else if (req.method === "POST") {
+        await cadastrarMensagem(req, res, atendimento);
+      } else {
+        await atualizarStatusAtendimento(req, res, atendimento);
+      }
+    };
+    if (REAL && req.method !== "GET") await fila(acao);
+    else await acao();
   } catch (erro) {
     responderJson(res, 502, { erro: erro.message });
   }
 }
 
-createServer(async (req, res) => {
+export const servidor = createServer(async (req, res) => {
 
   let caminho;
 
@@ -377,6 +563,32 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(400).end("Endereco invalido");
     return;
+  }
+
+  if (caminho === "/health" && req.method === "GET") return responderJson(res, 200, { ok: true });
+  if (caminho === "/webhooks/whatsapp") return webhookWhatsapp(req, res);
+  if (HOSPEDADO) {
+    const acesso = /^Basic ([A-Za-z0-9+/=]+)$/i.exec(req.headers.authorization || "");
+    if (!acesso || !iguais(acesso[1], credencialPainel)) {
+      return res.writeHead(401, { "WWW-Authenticate": 'Basic realm="ConnectFlow", charset="UTF-8"', "Cache-Control": "no-store" }).end();
+    }
+    res.setHeader("Cache-Control", "no-store");
+    if (caminho.startsWith("/api/") && !pedidoLocal(req)) return responderJson(res, 403, { erro: "Origem do painel inválida." });
+  }
+  if (caminho === "/api/whatsapp/config" || caminho === "/api/eventos") {
+    if (!pedidoLocal(req)) return responderJson(res, 403, { erro: "Origem do painel inválida." });
+    if (caminho === "/api/eventos" && req.method === "GET") return abrirEventos(res);
+    try {
+      if (req.method === "GET" && caminho === "/api/whatsapp/config") {
+        return responderJson(res, 200, { real: REAL, config: REAL ? await configWhatsapp() : null });
+      }
+      if (req.method === "POST" && REAL && caminho === "/api/whatsapp/config") {
+        return await fila(() => salvarConfigWhatsapp(req, res));
+      }
+      return responderJson(res, 405, { erro: "Operação indisponível." });
+    } catch {
+      return responderJson(res, 502, { real: REAL, erro: "Configuração do WhatsApp indisponível." });
+    }
   }
 
   // Impede acesso a arquivos privados
@@ -506,10 +718,9 @@ createServer(async (req, res) => {
     return;
   }
 
-  // Impede acessar o codigo privado do servidor
-  if (caminho === "/scripts" || caminho.startsWith("/scripts/")) {
-    res.writeHead(403).end("Acesso negado");
-    return;
+  // Abre somente os arquivos públicos da interface.
+  if (!["/", "/index.html"].includes(caminho) && !/^\/(?:assets|css|js)\/[\w/-]+\.(?:svg|png|jpg|ico|css|js)$/.test(caminho)) {
+    return res.writeHead(404).end("Arquivo não encontrado.");
   }
 
   // Abre os arquivos do site
@@ -540,6 +751,6 @@ createServer(async (req, res) => {
     }).end("Arquivo nao encontrado");
   }
 
-}).listen(PORTA, "127.0.0.1", () => {
+}).listen(PORTA, HOSPEDADO ? "0.0.0.0" : "127.0.0.1", () => {
   console.log(`ConnectFlow rodando em http://localhost:${PORTA}`);
 });

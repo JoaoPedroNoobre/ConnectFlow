@@ -8,6 +8,7 @@ import { STATUS, criarAtendimento, alterarStatusAtendimento } from "./atendiment
 
 // A lista guarda os atendimentos e as mensagens confirmados pelo Supabase.
 let atendimentos = [];
+let versaoLista = 0;
 const ouvintes = new Set();
 
 function notificar() {
@@ -37,9 +38,13 @@ export async function mudarStatus(id, novoStatus) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status: novoStatus, anterior: atual.statusBanco })
   });
+  const recente = buscarAtendimento(id);
+  // Um evento pode chegar antes da resposta do botão com um status mais novo.
+  if (dados.revisao_ia != null && recente.revisaoIA > dados.revisao_ia) return recente;
   return substituir({
-    ...alterarStatusAtendimento(buscarAtendimento(id), statusDaInterface(dados.status)),
-    statusBanco: dados.status
+    ...alterarStatusAtendimento(recente, statusDaInterface(dados.status)),
+    statusBanco: dados.status,
+    revisaoIA: dados.revisao_ia ?? atual.revisaoIA
   });
 }
 
@@ -53,12 +58,17 @@ function statusDaInterface(status) {
 function atualizarMensagens(id, registros) {
   const atual = buscarAtendimento(id);
   const porId = new Map(atual.mensagens.map((mensagem) => [mensagem.id, mensagem]));
+  const ordemEntrega = { enviando: 1, aceita: 2, enviada: 3, entregue: 4, lida: 5, falha: 4, incerta: 2 };
   for (const registro of registros) {
     const data = new Date(registro.created_at);
+    const entregaAtual = porId.get(registro.id)?.entrega;
+    const entrega = (ordemEntrega[entregaAtual] || 0) > (ordemEntrega[registro.entrega] || 0)
+      ? entregaAtual : registro.entrega;
     porId.set(registro.id, {
       id: registro.id,
       autor: registro.autor,
       texto: registro.texto,
+      entrega,
       data,
       hora: data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     });
@@ -77,12 +87,17 @@ export async function carregarMensagens(id) {
 
 // Só mostra a mensagem na conversa depois que o Supabase confirma a gravação.
 export async function adicionarMensagem(id, mensagem) {
-  const dados = await acessarAtendimentos(`/${id}/mensagens`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(mensagem)
-  });
-  atualizarMensagens(id, [dados.mensagem]);
+  try {
+    const dados = await acessarAtendimentos(`/${id}/mensagens`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mensagem)
+    });
+    atualizarMensagens(id, [dados.mensagem]);
+  } catch (erro) {
+    if (erro.mensagemRegistrada) atualizarMensagens(id, [erro.mensagemRegistrada]);
+    throw erro;
+  }
 }
 
 // Adapta o registro do banco aos campos que o WhatsApp usa.
@@ -91,8 +106,10 @@ function prepararAtendimento(registro) {
   return {
     ...alterarStatusAtendimento(atendimento, statusDaInterface(registro.status)),
     statusBanco: registro.status,
+    revisaoIA: registro.revisao_ia ?? 0,
+    canal: registro.canal || "interno",
     telefone: registro.clientes.telefone || "",
-    origem: "—",
+    origem: registro.canal === "whatsapp" ? "WhatsApp" : "—",
     interesse: "—",
     mensagens: []
   };
@@ -105,17 +122,25 @@ async function acessarAtendimentos(caminho = "", opcoes) {
   });
   const dados = await resposta.json().catch(() => null);
   if (!resposta.ok || !dados) {
-    throw new Error(dados?.erro || "Não foi possível acessar os atendimentos.");
+    const erro = new Error(dados?.erro || "Não foi possível acessar os atendimentos.");
+    erro.mensagemRegistrada = dados?.mensagem;
+    throw erro;
   }
   return dados;
 }
 
 // Carrega a lista salva e avisa o WhatsApp e o Dashboard.
 export async function carregarAtendimentos() {
+  const versao = ++versaoLista;
   const dados = await acessarAtendimentos();
-  const salvos = dados.atendimentos.map((registro) =>
-    buscarAtendimento(String(registro.id)) ?? prepararAtendimento(registro)
-  );
+  if (versao !== versaoLista) return;
+  const salvos = dados.atendimentos.map((registro) => {
+    const salvo = prepararAtendimento(registro);
+    const atual = buscarAtendimento(salvo.id);
+    if (!atual) return salvo;
+    if (atual.revisaoIA > salvo.revisaoIA) return atual;
+    return { ...salvo, mensagens: atual.mensagens, origem: atual.origem };
+  });
   atendimentos = salvos;
   notificar();
 }
@@ -129,7 +154,8 @@ export async function novoAtendimento(nome, telefone) {
   });
   const atendimento = prepararAtendimento(dados.atendimento);
   atendimento.origem = "WhatsApp";
-  atendimentos = [atendimento, ...atendimentos];
+  versaoLista++;
+  atendimentos = [atendimento, ...atendimentos.filter((item) => item.id !== atendimento.id)];
   notificar();
   return atendimento;
 }

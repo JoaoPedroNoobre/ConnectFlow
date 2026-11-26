@@ -8,7 +8,7 @@
 import { $, $$, toast, iniciais, lerArmazenado, gravarArmazenado, lerFormulario, preencherFormulario } from "./ui.js";
 import { iniciarDashboard } from "./telas/dashboard.js";
 import { iniciarWhatsApp, abrirConversa } from "./telas/whatsapp-tela.js";
-import { iniciarAgente } from "./telas/agente.js";
+import { iniciarAgente, salvarAgenteRealSeNecessario } from "./telas/agente.js";
 import { iniciarConfiguracoes } from "./telas/configuracoes.js";
 
 /* As 4 telas da interface (o Instagram Studio foi retirado) */
@@ -99,7 +99,7 @@ function configurarFormulariosPersistentes() {
     const chave = form.dataset.persistir;
     preencherFormulario(form, lerArmazenado(chave));
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const campos = [...form.elements];
       campos.forEach((c) => c.removeAttribute?.("aria-invalid"));
@@ -113,7 +113,10 @@ function configurarFormulariosPersistentes() {
         toast("Verifique os campos destacados.", "erro");
         return;
       }
-      gravarArmazenado(chave, lerFormulario(form));
+      const dados = lerFormulario(form);
+      try { await salvarAgenteRealSeNecessario(chave, dados); }
+      catch { toast("O servidor não confirmou o salvamento.", "erro"); return; }
+      gravarArmazenado(chave, dados);
       document.dispatchEvent(new CustomEvent("cf:salvo", { detail: chave }));
       toast("Alterações salvas.");
     });
