@@ -1,121 +1,168 @@
-// Dashboard: indicadores do período e atendimentos compartilhados com o WhatsApp.
-import { STATUS, filtrarAtendimentos } from "../atendimentos.js";
+/* ==========================================================================
+   Tela 1 — Dashboard
+   Mostra números VERDADEIROS a partir dos atendimentos carregados do
+   Supabase (os mesmos da tela de WhatsApp). Quando um status muda no
+   WhatsApp, o Dashboard é avisado e recalcula tudo na hora.
+
+   O que a lista de atendimentos traz hoje: id, status, nome e telefone do
+   cliente. Ela NÃO traz data, identificador do cliente, origem, quem
+   resolveu o atendimento nem vendas. Por isso esses cartões mostram um
+   aviso em vez de números inventados.
+   ========================================================================== */
+
+import { STATUS } from "../atendimentos.js";
+import { calcularMetricas } from "../dashboard.js";
 import { listarAtendimentos, inscrever } from "../estado.js";
-import { $, escapar, iniciais, corAvatar, badgeStatus, formatarPreco, ROTULO_STATUS } from "../ui.js";
+import { $, escapar, iniciais, corAvatar, badgeStatus, ROTULO_STATUS } from "../ui.js";
 
-const ORIGENS = [
-  { rotulo: "Instagram (posts)", cor: "#8b5cf6" },
-  { rotulo: "Instagram (direct)", cor: "#6366f1" },
-  { rotulo: "Outros", cor: "#22d3ee" },
-  { rotulo: "Link direto", cor: "#a78bfa" }
-];
-
-// Calcula a porcentagem e evita dividir por zero.
+// Calcula a porcentagem (0 a 100) e evita dividir por zero.
 function calcularPercentual(parte, total) {
   if (total === 0) return 0;
-  return (parte / total) * 100;
+  return Math.round((parte / total) * 100);
 }
 
-// Carrega a tela e escuta mudanças no filtro e na lista do WhatsApp.
+// Liga o filtro de período e passa a ouvir as mudanças dos atendimentos.
 export function iniciarDashboard() {
   const seletor = $("#filtroPeriodo");
   seletor.addEventListener("change", function () {
-    renderizarPeriodo(seletor.selectedOptions[0].textContent);
+    mostrarAvisoPeriodo(seletor.selectedOptions[0].textContent);
   });
-  renderizarPeriodo(seletor.selectedOptions[0].textContent);
+  mostrarAvisoPeriodo(seletor.selectedOptions[0].textContent);
+
+  mostrarOrigemSemDados();
+  mostrarVendasSemDados();
 
   renderizarAtendimentos(listarAtendimentos());
-  inscrever(renderizarAtendimentos);
+  inscrever(renderizarAtendimentos); // recalcula sempre que o WhatsApp mudar algo
 }
 
-// Mostra zero enquanto não há dados para os indicadores do período.
-function renderizarPeriodo(periodo) {
-  const indicadores = ["kpiFinalizados", "kpiTratamento", "kpiNaoConcluidos", "kpiIntervencao"];
+/* ---------- Filtro de período ---------- */
 
-  $("#kpiClientes").textContent = "0";
-  $("#kpiClientesTend").textContent = "0%";
-
-  for (const id of indicadores) {
-    $(`#${id}`).textContent = "0";
-    $(`#${id}Pct`).textContent = "0%";
-  }
-
-  $("#metricaResolucao").textContent = "0%";
-  $("#barraResolucao").style.setProperty("--valor", "0%");
-
-  renderizarOrigem();
-  renderizarVendas(periodo);
+// Os atendimentos ainda não têm data, então o filtro não pode ser aplicado.
+// Em vez de mostrar números errados, a tela avisa que conta todos.
+function mostrarAvisoPeriodo(periodo) {
+  $("#avisoPeriodo").textContent =
+    `Período escolhido: ${periodo}. Os atendimentos ainda não têm data salva no sistema, ` +
+    "então os números abaixo consideram todos os atendimentos.";
 }
 
-// Mantém a rosca neutra e mostra zero para cada origem.
-function renderizarOrigem() {
-  const rosca = $("#graficoOrigem");
-  let legenda = "";
+/* ---------- Tudo que depende dos atendimentos ---------- */
 
-  rosca.style.background = "var(--border)";
-  $("#donutTotal").textContent = "0";
-
-  for (const item of ORIGENS) {
-    legenda += `
-    <li>
-      <span class="donut-legend__dot" style="background:${item.cor}"></span>
-      <span>${item.rotulo}</span>
-      <strong>0%</strong>
-    </li>`;
-  }
-  $("#legendaOrigem").innerHTML = legenda;
-}
-
-// Preserva o espaço do gráfico e informa que o período está vazio.
-function renderizarVendas(periodo) {
-  $("#valorVendas").textContent = formatarPreco(0);
-  $("#tendenciaVendas").textContent = "0%";
-
-  const grafico = $("#graficoVendas");
-  grafico.innerHTML = `
-    <line class="line-chart__grid" x1="0" x2="300" y1="30" y2="30"/>
-    <line class="line-chart__grid" x1="0" x2="300" y1="60" y2="60"/>
-    <line class="line-chart__grid" x1="0" x2="300" y1="90" y2="90"/>
-    <text x="150" y="52" text-anchor="middle" fill="var(--text-muted)">Sem dados de vendas</text>
-    <text x="150" y="77" text-anchor="middle" fill="var(--text-muted)"></text>`;
-  $("text:last-child", grafico).textContent = periodo;
-  grafico.setAttribute("aria-label", `Sem dados de vendas para o período: ${periodo}`);
-}
-
-// Recalcula o resumo e a lista de conversas quando o WhatsApp atualiza os dados.
+// Chamada no início e toda vez que a lista de atendimentos muda.
 function renderizarAtendimentos(atendimentos) {
+  const metricas = calcularMetricas(atendimentos);
+  renderizarIndicadores(metricas);
+  renderizarDesempenho(metricas);
+  renderizarResumoStatus(atendimentos);
+  renderizarRecentes(atendimentos);
+}
+
+// Os 5 números do topo: total e quantidade de cada status (com a % do total).
+function renderizarIndicadores(m) {
+  $("#kpiTotal").textContent = m.total;
+
+  const indicadores = [
+    ["kpiIA", m.emAtendimento],
+    ["kpiAguardando", m.aguardandoHumano],
+    ["kpiAssumidos", m.assumidos],
+    ["kpiResolvidos", m.resolvidos]
+  ];
+  for (const [id, quantidade] of indicadores) {
+    $(`#${id}`).textContent = quantidade;
+    $(`#${id}Pct`).textContent = `${calcularPercentual(quantidade, m.total)}%`;
+  }
+}
+
+// Cartão "Desempenho da IA": só as métricas que dá para calcular com os status.
+function renderizarDesempenho(m) {
+  // Conversas ainda não resolvidas
+  const abertos = m.emAtendimento + m.aguardandoHumano + m.assumidos;
+
+  // Das conversas em aberto, quantas a IA está conduzindo
+  const comIA = calcularPercentual(m.emAtendimento, abertos);
+  $("#metricaIA").textContent = abertos === 0 ? "—" : `${comIA}%`;
+  $("#barraIA").style.width = `${comIA}%`;
+
+  // Do total, quantos já foram resolvidos (não dá para separar IA e atendente)
+  const resolvidos = calcularPercentual(m.resolvidos, m.total);
+  $("#metricaResolucao").textContent = m.total === 0 ? "—" : `${resolvidos}%`;
+  $("#barraResolucao").style.width = `${resolvidos}%`;
+}
+
+// Cartão "Status dos atendimentos": uma barra para cada status.
+function renderizarResumoStatus(atendimentos) {
   const ordem = [STATUS.EM_ATENDIMENTO, STATUS.AGUARDANDO_HUMANO, STATUS.ASSUMIDO, STATUS.RESOLVIDO];
   let resumo = "";
-  let recentes = "";
 
-  // Conta os atendimentos de cada status para preencher a barra.
   for (const status of ordem) {
-    const quantidade = filtrarAtendimentos(atendimentos, status).length;
+    const quantidade = atendimentos.filter((a) => a.status === status).length;
     const percentual = calcularPercentual(quantidade, atendimentos.length);
     resumo += `
         <li>
           <span>${ROTULO_STATUS[status]}</span>
           <strong>${quantidade}</strong>
-          <div class="progress progress--${status}"><span style="--valor:${percentual}%"></span></div>
+          <div class="barra-progresso barra-${status}"><span class="barra-preenchida" style="width:${percentual}%"></span></div>
         </li>`;
   }
+  $("#resumoStatus").innerHTML = resumo;
+}
 
-  // Cada conversa recente tem um link direto para a tela do WhatsApp.
+// Cartão "Atendimentos recentes": os 4 primeiros da lista, com link para a conversa.
+function renderizarRecentes(atendimentos) {
+  let recentes = "";
+
   for (const atendimento of atendimentos.slice(0, 4)) {
     const ultima = atendimento.mensagens[atendimento.mensagens.length - 1];
     recentes += `
         <li>
           <a href="#whatsapp/${atendimento.id}">
-            <span class="avatar avatar--sm" data-cor="${corAvatar(atendimento.cliente)}">${iniciais(atendimento.cliente)}</span>
+            <span class="avatar avatar-pequeno avatar-cor-${corAvatar(atendimento.cliente)}">${iniciais(atendimento.cliente)}</span>
             <div>
               <strong>${escapar(atendimento.cliente)}</strong>
-              <p>${escapar(ultima?.texto ?? "Novo atendimento")}</p>
+              <p>${escapar(ultima?.texto ?? "Abra a conversa para ver as mensagens")}</p>
             </div>
             ${badgeStatus(atendimento.status)}
           </a>
         </li>`;
   }
-  $("#resumoStatus").innerHTML = resumo;
-  if (!recentes) recentes = '<li class="empty-state">Nenhum atendimento ainda.</li>';
+
+  if (!recentes) recentes = '<li class="lista-vazia">Nenhum atendimento ainda.</li>';
   $("#listaRecentes").innerHTML = recentes;
+}
+
+/* ---------- Cartões sem dados no sistema ---------- */
+
+// A origem dos clientes (Instagram, link direto...) ainda não é salva no banco.
+function mostrarOrigemSemDados() {
+  $("#donutTotal").textContent = "—";
+  $("#graficoOrigem").setAttribute("aria-label", "Sem dados de origem dos clientes");
+  $("#legendaOrigem").innerHTML = `
+    <li class="nota-dados">
+      A origem dos clientes (Instagram, link direto…) ainda não é registrada no sistema.
+      Quando for salva no banco, o gráfico poderá ser preenchido.
+    </li>`;
+}
+
+// O sistema ainda não registra vendas: mostra só as linhas de fundo do
+// gráfico e um aviso em texto normal logo abaixo.
+// (O aviso não fica dentro do SVG porque o gráfico estica para ocupar a
+// largura do cartão, e um texto dentro dele ficaria deformado.)
+function mostrarVendasSemDados() {
+  $("#valorVendas").textContent = "Sem dados";
+  $("#valorVendas").classList.add("vendas-sem-dados"); // texto menor e mais claro
+  $("#tendenciaVendas").hidden = true; // não há variação para mostrar
+
+  const grafico = $("#graficoVendas");
+  grafico.innerHTML = `
+    <line class="grafico-linha-guia" x1="0" x2="300" y1="30" y2="30"/>
+    <line class="grafico-linha-guia" x1="0" x2="300" y1="60" y2="60"/>
+    <line class="grafico-linha-guia" x1="0" x2="300" y1="90" y2="90"/>`;
+  grafico.setAttribute("aria-label", "Sem dados de vendas: o sistema ainda não registra vendas");
+
+  // Cria o aviso só uma vez
+  if (!$("#notaVendas")) {
+    grafico.insertAdjacentHTML("afterend",
+      '<p class="nota-dados nota-vendas" id="notaVendas">O sistema ainda não registra vendas. ' +
+      "Quando os pedidos forem salvos no banco, o gráfico mostrará a evolução.</p>");
+  }
 }

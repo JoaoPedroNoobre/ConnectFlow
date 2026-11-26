@@ -111,26 +111,30 @@
 
         <!-- ================= 1. DASHBOARD ================= -->
         <section class="tela" id="view-dashboard" data-view="dashboard">
+          <!-- Aviso sobre o filtro de período (o texto é preenchido pelo JavaScript) -->
+          <p class="aviso-periodo" id="avisoPeriodo" role="status"></p>
+
+          <!-- Indicadores: contam os atendimentos carregados do Supabase, por status -->
           <div class="grade-indicadores">
             <article class="indicador indicador-destaque">
-              <p class="indicador-nome">Clientes (total)</p>
-              <div class="indicador-linha"><p class="indicador-valor" id="kpiClientes">—</p><span class="variacao variacao-positiva" id="kpiClientesTend"></span></div>
+              <p class="indicador-nome">Atendimentos (total)</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiTotal">—</p></div>
             </article>
             <article class="indicador">
-              <p class="indicador-nome">Finalizados pela IA</p>
-              <div class="indicador-linha"><p class="indicador-valor" id="kpiFinalizados">—</p><span class="variacao variacao-positiva" id="kpiFinalizadosPct"></span></div>
+              <p class="indicador-nome">Com a IA</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiIA">—</p><span class="variacao variacao-neutra" id="kpiIAPct"></span></div>
             </article>
             <article class="indicador">
-              <p class="indicador-nome">Em tratamento</p>
-              <div class="indicador-linha"><p class="indicador-valor" id="kpiTratamento">—</p><span class="variacao variacao-neutra" id="kpiTratamentoPct"></span></div>
+              <p class="indicador-nome">Aguardando humano</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiAguardando">—</p><span class="variacao variacao-alerta" id="kpiAguardandoPct"></span></div>
             </article>
             <article class="indicador">
-              <p class="indicador-nome">Não concluídos</p>
-              <div class="indicador-linha"><p class="indicador-valor" id="kpiNaoConcluidos">—</p><span class="variacao variacao-negativa" id="kpiNaoConcluidosPct"></span></div>
+              <p class="indicador-nome">Assumidos</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiAssumidos">—</p><span class="variacao variacao-neutra" id="kpiAssumidosPct"></span></div>
             </article>
             <article class="indicador">
-              <p class="indicador-nome">Intervenção humana</p>
-              <div class="indicador-linha"><p class="indicador-valor" id="kpiIntervencao">—</p><span class="variacao variacao-alerta" id="kpiIntervencaoPct"></span></div>
+              <p class="indicador-nome">Resolvidos</p>
+              <div class="indicador-linha"><p class="indicador-valor" id="kpiResolvidos">—</p><span class="variacao variacao-positiva" id="kpiResolvidosPct"></span></div>
             </article>
           </div>
 
@@ -160,16 +164,20 @@
               <h2 class="cartao-titulo">Desempenho da IA</h2>
               <ul class="lista-metricas">
                 <li>
-                  <div class="metrica-linha"><span>Taxa de resolução</span><strong id="metricaResolucao">—</strong></div>
-                  <div class="barra-progresso"><span class="barra-preenchida" id="barraResolucao"></span></div>
+                  <div class="metrica-linha"><span>Conversas em aberto com a IA</span><strong id="metricaIA">—</strong></div>
+                  <div class="barra-progresso"><span class="barra-preenchida" id="barraIA"></span></div>
                 </li>
                 <li>
-                  <div class="metric-list__row"><span>Satisfação dos clientes</span><strong>0 / 5</strong></div>
-                  <div class="progress progress--green"><span style="--valor: 0%"></span></div>
+                  <div class="metrica-linha"><span>Taxa de resolução (IA e atendentes)</span><strong id="metricaResolucao">—</strong></div>
+                  <div class="barra-progresso barra-verde"><span class="barra-preenchida" id="barraResolucao"></span></div>
                 </li>
                 <li>
-                  <div class="metric-list__row"><span>Tempo médio de resposta</span><strong>0 s</strong></div>
-                  <div class="progress progress--cyan"><span style="--valor: 0%"></span></div>
+                  <div class="metrica-linha"><span>Satisfação dos clientes</span><strong class="sem-dados">Sem dados</strong></div>
+                  <p class="nota-dados">O sistema ainda não registra avaliações dos clientes.</p>
+                </li>
+                <li>
+                  <div class="metrica-linha"><span>Tempo médio de resposta</span><strong class="sem-dados">Sem dados</strong></div>
+                  <p class="nota-dados">A lista de atendimentos ainda não traz o horário das mensagens.</p>
                 </li>
               </ul>
             </article>
